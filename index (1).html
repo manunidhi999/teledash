@@ -1,0 +1,3317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TeleDash — Cloud Telephony Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg-dark: #0f1117;
+  --bg-card: #16181f;
+  --bg-card2: #1c1f2a;
+  --sidebar-bg: #111318;
+  --border: #252836;
+  --border-light: #2e3244;
+  --accent: #6c63ff;
+  --accent2: #4f9dff;
+  --accent-green: #22c55e;
+  --accent-red: #ef4444;
+  --accent-yellow: #f59e0b;
+  --accent-purple: #a855f7;
+  --text-primary: #f0f1f5;
+  --text-secondary: #8b8fa8;
+  --text-muted: #555869;
+  --sidebar-w: 240px;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --topbar-bg: #13151c;
+  --topbar-border: #252836;
+  --shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+
+/* LIGHT THEME */
+html.light {
+  --bg-dark: #f0f2f7;
+  --bg-card: #ffffff;
+  --bg-card2: #f5f6fa;
+  --sidebar-bg: #1e1f2e;
+  --border: #e2e5ef;
+  --border-light: #c8cde0;
+  --text-primary: #1a1d2e;
+  --text-secondary: #5a6080;
+  --text-muted: #9da3be;
+  --topbar-bg: #ffffff;
+  --topbar-border: #e2e5ef;
+  --shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: var(--font); background: var(--bg-dark); color: var(--text-primary); overflow: hidden; }
+a { text-decoration: none; color: inherit; }
+
+/* LAYOUT */
+#app { display: flex; height: 100vh; flex-direction: column; }
+#topbar {
+  height: 52px; min-height: 52px;
+  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--topbar-border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px 0 16px;
+  box-shadow: var(--shadow);
+  z-index: 100;
+  transition: background .25s, border-color .25s;
+}
+#body-row { display: flex; flex: 1; min-height: 0; }
+#sidebar {
+  width: var(--sidebar-w); min-width: var(--sidebar-w);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+  transition: width .25s ease;
+}
+#main {
+  flex: 1; overflow-y: auto;
+  background: var(--bg-dark);
+  transition: background .25s;
+}
+.page { display: none; padding: 32px 36px; }
+.page.active { display: block; }
+
+/* TOPBAR ELEMENTS */
+.topbar-left { display: flex; align-items: center; gap: 14px; }
+.topbar-brand { display: flex; align-items: center; gap: 9px; }
+.topbar-brand-icon {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+}
+.topbar-brand-name { font-weight: 700; font-size: 15px; color: var(--text-primary); letter-spacing: -.3px; }
+.topbar-divider { width: 1px; height: 22px; background: var(--border); }
+.topbar-page-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+
+/* THEME TOGGLE */
+.theme-toggle-wrap { display: flex; align-items: center; gap: 8px; }
+.theme-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); user-select: none; }
+.theme-toggle {
+  position: relative; width: 48px; height: 26px; cursor: pointer;
+}
+.theme-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: #252836;
+  border-radius: 13px;
+  transition: background .25s;
+  border: 1px solid var(--border);
+}
+html.light .toggle-track { background: #e2e5ef; }
+.toggle-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #6c63ff;
+  transition: transform .25s, background .25s;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; line-height: 1;
+  box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+html.light .toggle-thumb { transform: translateX(22px); background: #6c63ff; }
+.topbar-client-wrap {
+  display: flex; align-items: center; gap: 8px;
+}
+.topbar-client-label {
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .5px; white-space: nowrap;
+}
+.topbar-client-select {
+  background: var(--bg-card2);
+  border: 1.5px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 5px 30px 5px 10px;
+  font-size: 13px;
+  font-family: var(--font);
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  min-width: 160px;
+  max-width: 220px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b8fa8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color .15s, box-shadow .15s;
+}
+.topbar-client-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108,99,255,.15);
+}
+.topbar-client-select option { background: var(--bg-card2); }
+/* Active client indicator dot */
+.topbar-client-active-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent-green);
+  box-shadow: 0 0 6px var(--accent-green);
+  flex-shrink: 0;
+  display: none;
+}
+.topbar-client-active-dot.visible { display: block; }
+html.light .topbar-client-select {
+  background-color: #f5f6fa;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235a6080' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+}
+.topbar-avatar {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: linear-gradient(135deg,#a855f7,#6c63ff);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff; cursor: pointer;
+}
+
+/* SIDEBAR HEADER */
+.sidebar-brand {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+.brand-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.brand-text { line-height: 1.2; }
+.brand-name { font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
+.brand-sub { font-size: 11px; color: var(--text-muted); }
+
+/* NAV */
+.nav-section { padding: 16px 12px 8px; }
+.nav-label { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 0 8px 8px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px;
+  cursor: pointer; font-size: 13.5px; font-weight: 500;
+  color: var(--text-secondary); transition: all .15s;
+  user-select: none;
+}
+.nav-item:hover { background: var(--bg-card2); color: var(--text-primary); }
+.nav-item.active { background: rgba(108,99,255,.15); color: var(--accent); }
+.nav-item .nav-icon { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto; background: var(--accent); color: #fff;
+  font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 20px;
+}
+.nav-badge.green { background: var(--accent-green); }
+
+/* SIDEBAR FOOTER */
+.sidebar-footer {
+  margin-top: auto; padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+.user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.user-avatar {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+}
+.user-email { font-size: 11.5px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-signout {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px; color: var(--text-muted); cursor: pointer;
+  padding: 6px 8px; border-radius: 6px; transition: all .15s;
+  background: none; border: none; font-family: var(--font); width: 100%;
+}
+.btn-signout:hover { color: var(--accent-red); background: rgba(239,68,68,.08); }
+
+/* PAGE HEADER */
+.page-header { margin-bottom: 28px; }
+.page-title { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+.page-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+.page-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+/* CARDS */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+.card-sm { padding: 16px; }
+
+/* KPI GRID */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.kpi-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px;
+  position: relative; overflow: hidden; transition: border-color .2s;
+}
+.kpi-card:hover { border-color: var(--border-light); }
+.kpi-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+.kpi-value { font-size: 32px; font-weight: 700; letter-spacing: -1px; }
+.kpi-trend { font-size: 11px; margin-top: 6px; color: var(--text-muted); }
+.kpi-trend.up { color: var(--accent-green); }
+.kpi-trend.down { color: var(--accent-red); }
+.kpi-icon { font-size: 18px; opacity: .6; }
+
+/* STATUS DOT */
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; }
+.dot-green { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+.dot-red { background: var(--accent-red); }
+.dot-yellow { background: var(--accent-yellow); }
+.dot-blue { background: var(--accent2); }
+
+/* BUTTONS */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  border: none; font-family: var(--font); transition: all .15s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #5a51e8; }
+.btn-secondary { background: var(--bg-card2); color: var(--text-primary); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: rgba(239,68,68,.12); color: var(--accent-red); border: 1px solid rgba(239,68,68,.2); }
+.btn-danger:hover { background: rgba(239,68,68,.2); }
+.btn-success { background: rgba(34,197,94,.12); color: var(--accent-green); border: 1px solid rgba(34,197,94,.2); }
+.btn-success:hover { background: rgba(34,197,94,.2); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+
+/* INPUTS */
+input, select, textarea {
+  background: var(--bg-card2); border: 1px solid var(--border);
+  color: var(--text-primary); border-radius: 8px;
+  padding: 9px 12px; font-size: 13px; font-family: var(--font);
+  outline: none; transition: border-color .15s;
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+select option { background: var(--bg-card2); }
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: .5px; }
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+/* TABLE */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  background: var(--bg-card2); padding: 12px 16px;
+  font-weight: 600; font-size: 11px; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--text-muted);
+  text-align: left; border-bottom: 1px solid var(--border);
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:hover { background: var(--bg-card2); }
+tbody tr:last-child { border-bottom: none; }
+tbody td { padding: 12px 16px; color: var(--text-primary); vertical-align: middle; }
+
+/* BADGE */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600;
+}
+.badge-green { background: rgba(34,197,94,.12); color: var(--accent-green); }
+.badge-red { background: rgba(239,68,68,.12); color: var(--accent-red); }
+.badge-yellow { background: rgba(245,158,11,.12); color: var(--accent-yellow); }
+.badge-blue { background: rgba(79,157,255,.12); color: var(--accent2); }
+.badge-purple { background: rgba(168,85,247,.12); color: var(--accent-purple); }
+.badge-gray { background: rgba(139,143,168,.1); color: var(--text-secondary); }
+
+/* FILTER BAR */
+.filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.filter-bar select, .filter-bar input { width: auto; min-width: 130px; }
+.filter-bar .spacer { flex: 1; }
+
+/* CHART CONTAINER */
+.chart-box { position: relative; height: 220px; }
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center; padding: 60px 20px;
+  color: var(--text-muted);
+}
+.empty-state .empty-icon { font-size: 40px; margin-bottom: 14px; opacity: .5; }
+.empty-state p { font-size: 14px; margin-top: 6px; color: var(--text-secondary); }
+
+/* MODAL */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.7);
+  display: none; align-items: center; justify-content: center;
+  z-index: 1000; padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); width: 100%; max-width: 620px;
+  max-height: 90vh; overflow-y: auto;
+  animation: slideUp .2s ease;
+}
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-title { font-size: 16px; font-weight: 700; }
+.modal-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px; line-height: 1; }
+.modal-close:hover { color: var(--text-primary); }
+.modal-body { padding: 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+
+/* TOAST */
+#toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+.toast {
+  background: var(--bg-card2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 18px;
+  font-size: 13px; font-weight: 500;
+  display: flex; align-items: center; gap: 10px;
+  animation: toastIn .2s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  min-width: 260px;
+}
+@keyframes toastIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.toast-success { border-left: 3px solid var(--accent-green); }
+.toast-error { border-left: 3px solid var(--accent-red); }
+
+/* PROGRESS BAR */
+.progress-bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+
+/* SPARKLINE (fake mini chart) */
+.mini-chart { display: flex; align-items: flex-end; gap: 2px; height: 30px; }
+.mini-bar { flex: 1; background: rgba(108,99,255,.3); border-radius: 2px; transition: background .2s; }
+.mini-bar:hover { background: var(--accent); }
+
+/* AVATAR STACK */
+.avatar { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg,#6c63ff,#4f9dff); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+
+/* LIVE INDICATOR */
+.live-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(34,197,94,.1); color: var(--accent-green);
+  border: 1px solid rgba(34,197,94,.2); padding: 3px 9px;
+  border-radius: 20px; font-size: 11px; font-weight: 600;
+}
+.live-pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green); animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+
+/* TABS */
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg-card2); padding: 4px; border-radius: 10px; border: 1px solid var(--border); }
+.tab { padding: 7px 18px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-secondary); transition: all .15s; }
+.tab.active { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); }
+.tab:hover:not(.active) { color: var(--text-primary); }
+
+/* DIVIDER */
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* SENTIMENT */
+.sentiment-pos { color: var(--accent-green); }
+.sentiment-neg { color: var(--accent-red); }
+.sentiment-neu { color: var(--accent-yellow); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+
+/* Smooth theme transitions */
+*, *::before, *::after {
+  transition: background-color .2s ease, border-color .2s ease, color .15s ease, box-shadow .2s ease;
+}
+/* But keep transform/opacity transitions instant on interactive elements */
+.nav-item, .btn, .tab, .card { transition: background-color .15s, border-color .15s, color .15s, transform .1s, box-shadow .15s; }
+
+/* LIGHT MODE SIDEBAR — stays dark, good contrast */
+html.light #sidebar { background: #1a1c2e; border-right-color: #252840; }
+html.light .nav-label { color: #555870; }
+html.light .nav-item { color: #a0a4c0; }
+html.light .nav-item:hover { background: #22243a; color: #ffffff; }
+html.light .nav-item.active { background: rgba(108,99,255,.2); color: #8b82ff; }
+html.light .sidebar-brand { border-bottom-color: #252840; }
+html.light .brand-sub { color: #555870; }
+html.light .sidebar-footer { border-top-color: #252840; }
+html.light .user-email { color: #a0a4c0; }
+html.light .btn-signout { color: #555870; }
+html.light .btn-signout:hover { color: #f87171; background: rgba(239,68,68,.08); }
+
+/* Light mode table */
+html.light thead th { background: #f5f6fa; }
+html.light tbody tr:hover { background: #f5f6fa; }
+html.light table { color: var(--text-primary); }
+
+/* Light mode modals */
+html.light .modal { background: #ffffff; }
+html.light .toast { background: #ffffff; }
+html.light .modal-overlay { background: rgba(0,0,0,.45); }
+
+/* RESPONSIVE */
+@media (max-width: 1100px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .form-grid-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 700px) {
+  :root { --sidebar-w: 56px; }
+  .nav-item span, .brand-text, .user-info .user-email, .nav-label { display: none; }
+  .nav-item { justify-content: center; }
+  .page { padding: 20px 14px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* =================== AUTH SCREENS =================== */
+#auth-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #0a0c12;
+  display: flex; align-items: stretch;
+  font-family: var(--font);
+  overflow: hidden;
+}
+#auth-screen.hidden { display: none; }
+
+/* Left decorative panel */
+.auth-left {
+  width: 46%; background: linear-gradient(145deg, #0d0f1e 0%, #111328 50%, #0a0c1a 100%);
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  padding: 60px 48px; position: relative; overflow: hidden;
+  border-right: 1px solid #1c1f30;
+}
+.auth-left::before {
+  content: ''; position: absolute; width: 500px; height: 500px;
+  border-radius: 50%; top: -180px; left: -180px;
+  background: radial-gradient(circle, rgba(108,99,255,.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+.auth-left::after {
+  content: ''; position: absolute; width: 400px; height: 400px;
+  border-radius: 50%; bottom: -150px; right: -120px;
+  background: radial-gradient(circle, rgba(79,157,255,.14) 0%, transparent 70%);
+  pointer-events: none;
+}
+.auth-brand-wrap {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  position: relative; z-index: 1;
+}
+.auth-brand-icon {
+  width: 72px; height: 72px; border-radius: 20px;
+  background: linear-gradient(135deg, #6c63ff, #4f9dff);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; margin-bottom: 20px;
+  box-shadow: 0 8px 32px rgba(108,99,255,.4);
+}
+.auth-brand-name {
+  font-size: 36px; font-weight: 800; color: #f0f1f5; letter-spacing: -1px; margin-bottom: 6px;
+}
+.auth-brand-tagline { font-size: 14px; color: #6b6f88; margin-bottom: 48px; }
+.auth-features { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 320px; }
+.auth-feature {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px; padding: 14px 16px;
+}
+.auth-feature-icon {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.auth-feature-text { font-size: 13px; font-weight: 500; color: #c0c4d8; line-height: 1.4; }
+.auth-feature-sub { font-size: 11px; color: #555870; margin-top: 2px; }
+.auth-dots {
+  display: flex; gap: 6px; margin-top: 40px;
+}
+.auth-dot { width: 6px; height: 6px; border-radius: 50%; background: #252840; }
+.auth-dot.active { background: #6c63ff; width: 18px; border-radius: 3px; }
+
+/* Right form panel */
+.auth-right {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 32px; overflow-y: auto; background: #0f1117;
+  position: relative;
+}
+.auth-right-inner { width: 100%; max-width: 400px; }
+
+/* Auth view switching */
+.auth-view { display: none; }
+.auth-view.active { display: block; }
+
+.auth-heading { font-size: 26px; font-weight: 800; color: #f0f1f5; letter-spacing: -.5px; margin-bottom: 6px; }
+.auth-sub { font-size: 13.5px; color: #6b6f88; margin-bottom: 32px; line-height: 1.5; }
+
+/* Auth input */
+.auth-field { margin-bottom: 16px; }
+.auth-field label { display: block; font-size: 12px; font-weight: 600; color: #8b8fa8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+.auth-input-wrap { position: relative; }
+.auth-input-wrap .ai-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; opacity: .5; pointer-events: none; }
+.auth-input-wrap input {
+  width: 100%; padding: 11px 12px 11px 38px;
+  background: #16181f; border: 1.5px solid #252836;
+  border-radius: 10px; color: #f0f1f5; font-size: 14px;
+  font-family: var(--font); outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.auth-input-wrap input:focus { border-color: #6c63ff; box-shadow: 0 0 0 3px rgba(108,99,255,.15); }
+.auth-input-wrap input::placeholder { color: #3d4060; }
+.auth-pw-toggle {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; font-size: 15px; color: #555869;
+  padding: 2px;
+}
+.auth-pw-toggle:hover { color: #8b8fa8; }
+.auth-error {
+  background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.25);
+  border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #f87171;
+  margin-bottom: 16px; display: none;
+}
+.auth-error.show { display: block; }
+.auth-success {
+  background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.25);
+  border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #4ade80;
+  margin-bottom: 16px; display: none;
+}
+.auth-success.show { display: block; }
+.auth-btn {
+  width: 100%; padding: 13px; border-radius: 10px;
+  background: linear-gradient(135deg, #6c63ff, #4f9dff);
+  color: #fff; font-size: 15px; font-weight: 700;
+  border: none; cursor: pointer; font-family: var(--font);
+  transition: opacity .15s, transform .1s;
+  margin-bottom: 20px; letter-spacing: -.1px;
+  box-shadow: 0 4px 20px rgba(108,99,255,.35);
+}
+.auth-btn:hover { opacity: .92; transform: translateY(-1px); }
+.auth-btn:active { transform: translateY(0); }
+.auth-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.auth-divider {
+  display: flex; align-items: center; gap: 12px; margin: 4px 0 20px;
+  font-size: 12px; color: #3d4060;
+}
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: #1e2030; }
+.auth-link-row { text-align: center; font-size: 13px; color: #6b6f88; }
+.auth-link-row a { color: #6c63ff; font-weight: 600; cursor: pointer; text-decoration: none; }
+.auth-link-row a:hover { text-decoration: underline; }
+.auth-forgot { text-align: right; margin-top: -10px; margin-bottom: 16px; }
+.auth-forgot a { font-size: 12px; color: #6c63ff; cursor: pointer; }
+.auth-terms { font-size: 11.5px; color: #555869; text-align: center; margin-top: 6px; line-height: 1.6; }
+.auth-terms a { color: #6c63ff; }
+
+/* Password strength bar */
+.pw-strength-wrap { margin-top: 6px; }
+.pw-strength-bar { height: 4px; background: #1e2030; border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+.pw-strength-fill { height: 100%; border-radius: 2px; transition: width .3s, background .3s; width: 0%; }
+.pw-strength-label { font-size: 11px; color: #555869; }
+
+/* Role selector */
+.role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.role-card {
+  border: 1.5px solid #252836; border-radius: 10px; padding: 14px 12px;
+  cursor: pointer; text-align: center; transition: all .15s;
+  background: #16181f;
+}
+.role-card:hover { border-color: #6c63ff; background: rgba(108,99,255,.06); }
+.role-card.selected { border-color: #6c63ff; background: rgba(108,99,255,.12); }
+.role-card-icon { font-size: 22px; margin-bottom: 6px; }
+.role-card-name { font-size: 13px; font-weight: 600; color: #d0d4e8; }
+.role-card-desc { font-size: 11px; color: #555869; margin-top: 2px; }
+
+/* Theme toggle on auth */
+.auth-theme-btn {
+  position: absolute; top: 18px; right: 18px;
+  background: #16181f; border: 1px solid #252836; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #8b8fa8;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: all .15s;
+}
+.auth-theme-btn:hover { border-color: #6c63ff; color: #6c63ff; }
+
+/* Users list popover */
+.demo-accounts {
+  background: #13151f; border: 1px solid #252836; border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 20px;
+}
+.demo-accounts-title { font-size: 11px; color: #555869; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.demo-account {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0; border-bottom: 1px solid #1a1c28; cursor: pointer;
+  transition: all .1s;
+}
+.demo-account:last-child { border-bottom: none; }
+.demo-account:hover .demo-fill-btn { color: #6c63ff; }
+.demo-account-info { font-size: 12px; }
+.demo-account-email { color: #c0c4d8; font-weight: 500; }
+.demo-account-role { color: #555869; font-size: 11px; }
+.demo-fill-btn { font-size: 11px; color: #3d4060; transition: color .15s; }
+
+/* Light mode auth overrides */
+html.light #auth-screen { background: #f0f2f7; }
+html.light .auth-left { background: linear-gradient(145deg, #1a1c2e, #1e2040); border-right-color: #252840; }
+html.light .auth-right { background: #ffffff; }
+html.light .auth-heading { color: #1a1d2e; }
+html.light .auth-sub { color: #5a6080; }
+html.light .auth-input-wrap input { background: #f5f6fa; border-color: #e2e5ef; color: #1a1d2e; }
+html.light .auth-input-wrap input:focus { border-color: #6c63ff; }
+html.light .auth-input-wrap input::placeholder { color: #9da3be; }
+html.light .auth-theme-btn { background: #f5f6fa; border-color: #e2e5ef; color: #5a6080; }
+html.light .demo-accounts { background: #f5f6fa; border-color: #e2e5ef; }
+html.light .demo-account { border-bottom-color: #e2e5ef; }
+html.light .demo-account-email { color: #1a1d2e; }
+html.light .role-card { background: #f5f6fa; border-color: #e2e5ef; }
+html.light .role-card-name { color: #1a1d2e; }
+html.light .pw-strength-bar { background: #e2e5ef; }
+html.light .auth-divider { color: #9da3be; }
+html.light .auth-divider::before, html.light .auth-divider::after { background: #e2e5ef; }
+html.light .auth-link-row { color: #5a6080; }
+html.light .auth-terms { color: #9da3be; }
+html.light .auth-field label { color: #5a6080; }
+html.light .auth-pw-toggle { color: #9da3be; }
+</style>
+</head>
+<body>
+
+<!-- =================== AUTH SCREEN =================== -->
+<div id="auth-screen">
+  <!-- Left decorative panel -->
+  <div class="auth-left">
+    <div class="auth-brand-wrap">
+      <div class="auth-brand-icon">📞</div>
+      <div class="auth-brand-name">TeleDash</div>
+      <div class="auth-brand-tagline">Cloud Telephony Intelligence Platform</div>
+      <div class="auth-features">
+        <div class="auth-feature">
+          <div class="auth-feature-icon" style="background:rgba(108,99,255,.15)">📊</div>
+          <div>
+            <div class="auth-feature-text">Master Dashboard</div>
+            <div class="auth-feature-sub">Real-time call analytics across all clients</div>
+          </div>
+        </div>
+        <div class="auth-feature">
+          <div class="auth-feature-icon" style="background:rgba(34,197,94,.12)">🧠</div>
+          <div>
+            <div class="auth-feature-text">AI Call Intelligence</div>
+            <div class="auth-feature-sub">Sentiment, QA scoring & auto-transcription</div>
+          </div>
+        </div>
+        <div class="auth-feature">
+          <div class="auth-feature-icon" style="background:rgba(79,157,255,.12)">📡</div>
+          <div>
+            <div class="auth-feature-text">Live Call Monitor</div>
+            <div class="auth-feature-sub">Track active calls with agent-level detail</div>
+          </div>
+        </div>
+        <div class="auth-feature">
+          <div class="auth-feature-icon" style="background:rgba(245,158,11,.12)">📋</div>
+          <div>
+            <div class="auth-feature-text">Reports & Export</div>
+            <div class="auth-feature-sub">Filter, export CSV/Excel/PDF instantly</div>
+          </div>
+        </div>
+      </div>
+      <div class="auth-dots">
+        <div class="auth-dot active"></div>
+        <div class="auth-dot"></div>
+        <div class="auth-dot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right form panel -->
+  <div class="auth-right">
+    <!-- Theme toggle -->
+    <button class="auth-theme-btn" onclick="authToggleTheme()" id="auth-theme-btn">🌙 Dark Mode</button>
+
+    <div class="auth-right-inner">
+
+      <!-- ===== SIGN IN VIEW ===== -->
+      <div class="auth-view active" id="view-signin">
+        <div class="auth-heading">Welcome back 👋</div>
+        <div class="auth-sub">Sign in to your TeleDash account to continue</div>
+
+        <!-- Demo accounts shortcut -->
+        <div class="demo-accounts">
+          <div class="demo-accounts-title">⚡ Quick Demo Accounts</div>
+          <div class="demo-account" onclick="fillDemo('admin@teledash.io','Admin@123')">
+            <div class="demo-account-info">
+              <div class="demo-account-email">admin@teledash.io</div>
+              <div class="demo-account-role">Super Admin · Full Access</div>
+            </div>
+            <span class="demo-fill-btn">Fill →</span>
+          </div>
+          <div class="demo-account" onclick="fillDemo('manager@teledash.io','Manager@123')">
+            <div class="demo-account-info">
+              <div class="demo-account-email">manager@teledash.io</div>
+              <div class="demo-account-role">Manager · Analytics & Reports</div>
+            </div>
+            <span class="demo-fill-btn">Fill →</span>
+          </div>
+          <div class="demo-account" onclick="fillDemo('agent@teledash.io','Agent@123')">
+            <div class="demo-account-info">
+              <div class="demo-account-email">agent@teledash.io</div>
+              <div class="demo-account-role">Agent · Basic Access</div>
+            </div>
+            <span class="demo-fill-btn">Fill →</span>
+          </div>
+        </div>
+
+        <div class="auth-error" id="signin-error">Invalid email or password. Please try again.</div>
+
+        <div class="auth-field">
+          <label>Email Address</label>
+          <div class="auth-input-wrap">
+            <span class="ai-icon">✉️</span>
+            <input type="email" id="signin-email" placeholder="you@company.com" autocomplete="email">
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label>Password</label>
+          <div class="auth-input-wrap">
+            <span class="ai-icon">🔒</span>
+            <input type="password" id="signin-password" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doSignIn()">
+            <button class="auth-pw-toggle" type="button" onclick="togglePw('signin-password',this)">👁️</button>
+          </div>
+        </div>
+
+        <div class="auth-forgot"><a onclick="showView('view-forgot')">Forgot password?</a></div>
+
+        <button class="auth-btn" id="signin-btn" onclick="doSignIn()">Sign In to TeleDash</button>
+
+        <div class="auth-link-row">
+          Don't have an account? <a onclick="showView('view-signup')">Create one free</a>
+        </div>
+      </div>
+
+      <!-- ===== SIGN UP VIEW ===== -->
+      <div class="auth-view" id="view-signup">
+        <div class="auth-heading">Create your account</div>
+        <div class="auth-sub">Join TeleDash and start managing your telephony operations</div>
+
+        <div class="auth-error" id="signup-error"></div>
+        <div class="auth-success" id="signup-success"></div>
+
+        <!-- Role selector -->
+        <div style="margin-bottom:16px">
+          <div class="auth-field" style="margin-bottom:8px"><label>I am a…</label></div>
+          <div class="role-grid">
+            <div class="role-card selected" id="role-admin" onclick="selectRole('admin')">
+              <div class="role-card-icon">👑</div>
+              <div class="role-card-name">Admin</div>
+              <div class="role-card-desc">Full platform access</div>
+            </div>
+            <div class="role-card" id="role-manager" onclick="selectRole('manager')">
+              <div class="role-card-icon">📊</div>
+              <div class="role-card-name">Manager</div>
+              <div class="role-card-desc">Analytics & reports</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="auth-field">
+            <label>First Name</label>
+            <div class="auth-input-wrap">
+              <span class="ai-icon">👤</span>
+              <input type="text" id="signup-fname" placeholder="John">
+            </div>
+          </div>
+          <div class="auth-field">
+            <label>Last Name</label>
+            <div class="auth-input-wrap">
+              <span class="ai-icon">👤</span>
+              <input type="text" id="signup-lname" placeholder="Smith">
+            </div>
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label>Work Email</label>
+          <div class="auth-input-wrap">
+            <span class="ai-icon">✉️</span>
+            <input type="email" id="signup-email" placeholder="you@company.com">
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label>Company Name</label>
+          <div class="auth-input-wrap">
+            <span class="ai-icon">🏢</span>
+            <input type="text" id="signup-company" placeholder="Acme Corp">
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label>Password</label>
+          <div class="auth-input-wrap">
+            <span class="ai-icon">🔒</span>
+            <input type="password" id="signup-password" placeholder="Min. 8 characters" oninput="checkPwStrength(this.value)" autocomplete="new-password">
+            <button class="auth-pw-toggle" type="button" onclick="togglePw('signup-password',this)">👁️</button>
+          </div>
+          <div class="pw-strength-wrap">
+            <div class="pw-strength-bar"><div class="pw-strength-fill" id="pw-fill"></div></div>
+            <div class="pw-strength-label" id="pw-label">Enter a password</div>
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label>Confirm Password</label>
+          <div class="auth-input-wrap">
+            <span class="ai-icon">🔒</span>
+            <input type="password" id="signup-confirm" placeholder="Repeat your password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSignUp()">
+            <button class="auth-pw-toggle" type="button" onclick="togglePw('signup-confirm',this)">👁️</button>
+          </div>
+        </div>
+
+        <button class="auth-btn" onclick="doSignUp()">Create Account</button>
+
+        <div class="auth-terms">
+          By signing up you agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+        </div>
+
+        <div class="auth-divider">or</div>
+
+        <div class="auth-link-row">
+          Already have an account? <a onclick="showView('view-signin')">Sign in</a>
+        </div>
+      </div>
+
+      <!-- ===== FORGOT PASSWORD VIEW ===== -->
+      <div class="auth-view" id="view-forgot">
+        <div style="margin-bottom:20px">
+          <a onclick="showView('view-signin')" style="font-size:13px;color:#6c63ff;cursor:pointer;display:flex;align-items:center;gap:5px">← Back to Sign In</a>
+        </div>
+        <div class="auth-heading">Reset password 🔑</div>
+        <div class="auth-sub">Enter your email address and we'll send you a reset link.</div>
+
+        <div class="auth-error" id="forgot-error"></div>
+        <div class="auth-success" id="forgot-success"></div>
+
+        <div class="auth-field">
+          <label>Email Address</label>
+          <div class="auth-input-wrap">
+            <span class="ai-icon">✉️</span>
+            <input type="email" id="forgot-email" placeholder="you@company.com" onkeydown="if(event.key==='Enter')doForgot()">
+          </div>
+        </div>
+
+        <button class="auth-btn" onclick="doForgot()">Send Reset Link</button>
+      </div>
+
+    </div><!-- /auth-right-inner -->
+  </div><!-- /auth-right -->
+</div><!-- /auth-screen -->
+
+<div id="app">
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="topbar-left">
+      <div class="topbar-brand">
+        <div class="topbar-brand-icon">📞</div>
+        <span class="topbar-brand-name">TeleDash</span>
+      </div>
+      <div class="topbar-divider"></div>
+      <span class="topbar-page-title" id="topbar-page-title">Master Dashboard</span>
+    </div>
+    <div class="topbar-right">
+      <!-- GLOBAL CLIENT FILTER -->
+      <div class="topbar-client-wrap">
+        <span class="topbar-client-label">Client</span>
+        <div class="topbar-client-active-dot" id="global-client-dot"></div>
+        <select class="topbar-client-select" id="global-client-select" onchange="onGlobalClientChange()">
+          <option value="">All Clients</option>
+        </select>
+      </div>
+      <div class="topbar-divider"></div>
+      <span class="topbar-clock" id="topbar-clock"></span>
+      <div class="topbar-divider"></div>
+      <div class="theme-toggle-wrap">
+        <span class="theme-label" id="theme-label">🌙 Dark</span>
+        <label class="theme-toggle" title="Toggle light / dark theme">
+          <input type="checkbox" id="theme-checkbox" onchange="toggleTheme(this.checked)">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb" id="toggle-thumb">🌙</div>
+        </label>
+      </div>
+      <div class="topbar-divider"></div>
+      <div class="topbar-avatar" title="Admin">AD</div>
+    </div>
+  </div>
+
+  <div id="body-row">
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">📞</div>
+      <div class="brand-text">
+        <div class="brand-name">TeleDash</div>
+        <div class="brand-sub">Telephony Platform</div>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Navigation</div>
+      <div class="nav-item active" data-page="dashboard"><span class="nav-icon">📊</span><span>Dashboard</span></div>
+      <div class="nav-item" data-page="analytics"><span class="nav-icon">📈</span><span>Analytics</span></div>
+      <div class="nav-item" data-page="reports"><span class="nav-icon">📋</span><span>Reports</span></div>
+      <div class="nav-item" data-page="clients"><span class="nav-icon">🏢</span><span>Clients</span><span class="nav-badge" id="client-count-badge">0</span></div>
+      <div class="nav-item" data-page="onboarding"><span class="nav-icon">➕</span><span>Client Onboarding</span></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">AI & Analytics</div>
+      <div class="nav-item" data-page="ai-intelligence"><span class="nav-icon">🧠</span><span>AI Intelligence</span></div>
+      <div class="nav-item" data-page="ai-chat"><span class="nav-icon">💬</span><span>AI Chat</span></div>
+      <div class="nav-item" data-page="token-usage"><span class="nav-icon">🔢</span><span>Token Usage</span></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Operations</div>
+      <div class="nav-item" data-page="live-monitor"><span class="nav-icon">📡</span><span>Live Monitor</span><span class="nav-badge green" id="live-badge-count">0</span></div>
+      <div class="nav-item" data-page="agents"><span class="nav-icon">👥</span><span>Agents</span></div>
+      <div class="nav-item" data-page="transcriptor"><span class="nav-icon">🎙️</span><span>Transcriptor</span></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">AD</div>
+        <div class="user-email">admin@teledash.io</div>
+      </div>
+      <button class="btn-signout" onclick="signOut()">↩ Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main id="main">
+    <!-- DASHBOARD PAGE -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div>
+            <div class="page-title">Master Dashboard</div>
+            <div class="page-subtitle">Overview of all client telephony activity · <span class="live-badge"><span class="live-pulse"></span>Real-time updates enabled</span></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <button class="btn btn-secondary btn-sm" onclick="showPage('onboarding')">+ Add Client</button>
+            <button class="btn btn-primary btn-sm" onclick="refreshDashboard()">↻ Refresh</button>
+          </div>
+        </div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Calls Today <span class="kpi-icon">📞</span></div>
+          <div class="kpi-value" id="kpi-total">0</div>
+          <div class="kpi-trend" id="kpi-total-trend">— No data yet</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Answered <span class="kpi-icon" style="color:var(--accent-green)">✅</span></div>
+          <div class="kpi-value" id="kpi-answered">0</div>
+          <div class="kpi-trend" id="kpi-answered-trend">— No data yet</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Missed <span class="kpi-icon" style="color:var(--accent-red)">📵</span></div>
+          <div class="kpi-value" id="kpi-missed">0</div>
+          <div class="kpi-trend" id="kpi-missed-trend">— No data yet</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Active Clients <span class="kpi-icon" style="color:var(--accent2)">🏢</span></div>
+          <div class="kpi-value" id="kpi-clients">0</div>
+          <div class="kpi-trend" id="kpi-clients-trend">— No clients onboarded</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:20px">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div style="font-size:14px;font-weight:600">Call Volume — Last 7 Days</div>
+            <select style="width:auto;font-size:12px;padding:5px 10px" id="dash-chart-filter">
+              <option>All Clients</option>
+            </select>
+          </div>
+          <div class="chart-box"><canvas id="dashCallChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div style="font-size:14px;font-weight:600;margin-bottom:16px">Call Outcomes</div>
+          <div class="chart-box"><canvas id="dashDonutChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-size:14px;font-weight:600">Client Overview</div>
+          <button class="btn btn-secondary btn-sm" onclick="showPage('clients')">View All</button>
+        </div>
+        <div id="dash-client-table-wrap">
+          <div class="empty-state">
+            <div class="empty-icon">🏢</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-secondary)">No clients yet</div>
+            <p>Go to <a href="#" onclick="showPage('onboarding')" style="color:var(--accent)">Client Onboarding</a> to add your first client.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS PAGE -->
+    <div id="page-analytics" class="page">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div>
+            <div class="page-title">Client Analytics</div>
+            <div class="page-subtitle">Visualize call performance metrics · <span id="analytics-client-badge" class="badge badge-purple" style="font-size:12px;display:none"></span><span id="analytics-no-client" style="font-size:12px;color:var(--text-muted)">Select a client from the top bar</span></div>
+          </div>
+        </div>
+      </div>
+      <select id="analytics-client-select" style="display:none"></select>
+      <div id="analytics-content">
+        <div class="empty-state card">
+          <div class="empty-icon">📈</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text-secondary)">Select a client from the top bar to view analytics</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS PAGE -->
+    <div id="page-reports" class="page">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div>
+            <div class="page-title">Reports</div>
+            <div class="page-subtitle">Filter and export call records · <span id="reports-client-badge" class="badge badge-purple" style="font-size:12px;display:none"></span><span id="reports-no-client" style="font-size:12px;color:var(--text-muted)">Select a client from the top bar</span></div>
+          </div>
+        </div>
+      </div>
+      <select id="rpt-client" style="display:none"></select>
+      <div class="card" style="margin-bottom:16px">
+        <div class="filter-bar">
+          <input type="date" id="rpt-from" style="width:140px">
+          <input type="date" id="rpt-to" style="width:140px">
+          <select id="rpt-status" style="min-width:130px">
+            <option value="">All statuses</option>
+            <option>Answered</option>
+            <option>Missed</option>
+            <option>Busy</option>
+            <option>Failed</option>
+          </select>
+          <select id="rpt-sentiment" style="min-width:130px">
+            <option value="">All sentiments</option>
+            <option>Positive</option>
+            <option>Neutral</option>
+            <option>Negative</option>
+          </select>
+          <div class="spacer"></div>
+          <button class="btn btn-primary btn-sm" onclick="runReport()">🔍 Run Report</button>
+          <button class="btn btn-secondary btn-sm" onclick="openLogCallModal()">+ Log Call</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-secondary btn-sm" onclick="exportReport('CSV')">⬇ CSV</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportReport('Excel')">⬇ Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportReport('PDF')">⬇ PDF</button>
+        </div>
+      </div>
+      <div class="card">
+        <div id="reports-table-content">
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-secondary)">Select a client from the top bar to view reports</div>
+            <p>Apply filters and click Run Report</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENTS PAGE -->
+    <div id="page-clients" class="page">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div>
+            <div class="page-title">Clients</div>
+            <div class="page-subtitle">Manage and monitor all onboarded clients</div>
+          </div>
+          <button class="btn btn-primary" onclick="showPage('onboarding')">+ Onboard New Client</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="client-search" placeholder="Search clients…" style="max-width:260px" oninput="renderClientsList()">
+        <select id="client-status-filter" onchange="renderClientsList()">
+          <option value="">All statuses</option>
+          <option>Active</option>
+          <option>Trial</option>
+          <option>Inactive</option>
+        </select>
+        <div class="spacer"></div>
+        <span id="client-count-display" style="font-size:12px;color:var(--text-muted)">0 clients</span>
+      </div>
+      <div id="clients-grid"></div>
+    </div>
+
+    <!-- ONBOARDING PAGE -->
+    <div id="page-onboarding" class="page">
+      <div class="page-header">
+        <div class="page-title">Client Onboarding</div>
+        <div class="page-subtitle">Register new clients and configure their telephony settings</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 380px;gap:24px">
+        <div class="card">
+          <div style="font-size:15px;font-weight:700;margin-bottom:22px;display:flex;align-items:center;gap:8px">
+            <span>🏢</span> New Client Registration
+          </div>
+
+          <div id="ob-error" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 14px;font-size:13px;color:#f87171;margin-bottom:16px"></div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Company Name *</label>
+              <input type="text" id="ob-company" placeholder="Acme Corp">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Industry</label>
+              <select id="ob-industry">
+                <option>Telemarketing</option>
+                <option>BPO / Call Center</option>
+                <option>Healthcare</option>
+                <option>Finance &amp; Banking</option>
+                <option>Insurance</option>
+                <option>Real Estate</option>
+                <option>E-commerce</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Primary Contact Name *</label>
+              <input type="text" id="ob-contact" placeholder="John Smith">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contact Email *</label>
+              <input type="email" id="ob-email" placeholder="john@acme.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input type="tel" id="ob-phone" placeholder="+91 98000 00000">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Country / Region</label>
+              <select id="ob-country">
+                <option>India</option>
+                <option>United States</option>
+                <option>United Kingdom</option>
+                <option>Australia</option>
+                <option>Canada</option>
+                <option>UAE</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Subscription Plan</label>
+              <select id="ob-plan">
+                <option>Starter — ₹5,000/mo</option>
+                <option>Growth — ₹12,000/mo</option>
+                <option>Pro — ₹25,000/mo</option>
+                <option>Enterprise — Custom</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select id="ob-status">
+                <option>Active</option>
+                <option>Trial</option>
+                <option>Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notes / Additional Info</label>
+            <textarea id="ob-notes" rows="2" placeholder="Client background, special requirements…"></textarea>
+          </div>
+
+          <!-- hidden fields kept for compatibility -->
+          <input type="hidden" id="ob-agents" value="10">
+          <input type="hidden" id="ob-call-limit" value="5000">
+          <input type="hidden" id="ob-start-date">
+          <input type="hidden" id="feat-ai-val" value="1">
+
+          <div style="display:flex;align-items:center;gap:12px;margin-top:6px">
+            <button class="btn btn-primary" style="padding:11px 28px;font-size:14px" onclick="submitOnboarding()">✓ Onboard Client</button>
+            <button class="btn btn-secondary" onclick="clearOnboardForm()">✕ Clear</button>
+          </div>
+        </div>
+        <!-- Recent Clients Panel -->
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:16px">Onboarding Stats</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div style="text-align:center;padding:12px;background:var(--bg-dark);border-radius:8px;border:1px solid var(--border)">
+                <div style="font-size:24px;font-weight:700" id="stat-total-clients">0</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:3px">Total</div>
+              </div>
+              <div style="text-align:center;padding:12px;background:var(--bg-dark);border-radius:8px;border:1px solid var(--border)">
+                <div style="font-size:24px;font-weight:700;color:var(--accent-green)" id="stat-active-clients">0</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:3px">Active</div>
+              </div>
+              <div style="text-align:center;padding:12px;background:var(--bg-dark);border-radius:8px;border:1px solid var(--border)">
+                <div style="font-size:24px;font-weight:700;color:var(--accent-yellow)" id="stat-trial-clients">0</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:3px">Trial</div>
+              </div>
+              <div style="text-align:center;padding:12px;background:var(--bg-dark);border-radius:8px;border:1px solid var(--border)">
+                <div style="font-size:24px;font-weight:700;color:var(--text-muted)" id="stat-inactive-clients">0</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:3px">Inactive</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-size:14px;font-weight:700;margin-bottom:14px">Recently Onboarded</div>
+            <div id="recent-onboard-list">
+              <div style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px">No clients yet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI INTELLIGENCE PAGE -->
+    <div id="page-ai-intelligence" class="page">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div>
+            <div class="page-title">AI Call Intelligence</div>
+            <div class="page-subtitle">AI-powered call analysis and insights · <span id="ai-intel-client-badge" class="badge badge-purple" style="font-size:12px;display:none"></span><span id="ai-intel-no-client" style="font-size:12px;color:var(--text-muted)">Select a client from the top bar</span></div>
+          </div>
+        </div>
+      </div>
+      <select id="ai-client-select" style="display:none"></select>
+      <div id="ai-intel-content">
+        <div class="empty-state card">
+          <div class="empty-icon">🧠</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text-secondary)">Select a client from the top bar to view AI analysis</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI CHAT PAGE -->
+    <div id="page-ai-chat" class="page">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div>
+            <div class="page-title">AI Chat Assistant</div>
+            <div class="page-subtitle">Ask questions about client call data · <span id="ai-chat-client-badge" class="badge badge-purple" style="font-size:12px;display:none"></span><span id="ai-chat-no-client" style="font-size:12px;color:var(--text-muted)">Select a client from the top bar</span></div>
+          </div>
+        </div>
+      </div>
+      <select id="chat-client-select" style="display:none"></select>
+      <div id="chat-content">
+        <div class="empty-state card">
+          <div class="empty-icon">💬</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text-secondary)">Select a client from the top bar to start chatting</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOKEN USAGE PAGE -->
+    <div id="page-token-usage" class="page">
+      <div class="page-header">
+        <div class="page-title">Token Usage</div>
+        <div class="page-subtitle">Monitor AI token consumption and costs</div>
+      </div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Tokens <span class="kpi-icon">🔢</span></div>
+          <div class="kpi-value" id="tu-tokens">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total Cost <span class="kpi-icon">💰</span></div>
+          <div class="kpi-value" id="tu-cost">$0.0000</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Records <span class="kpi-icon">📝</span></div>
+          <div class="kpi-value" id="tu-records">0</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card">
+          <div style="font-size:14px;font-weight:600;margin-bottom:16px">Daily Cost (Last 14 Days)</div>
+          <div class="chart-box"><canvas id="tokenDailyChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div style="font-size:14px;font-weight:600;margin-bottom:16px">Cost by Model</div>
+          <div class="chart-box"><canvas id="tokenModelChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE MONITOR PAGE -->
+    <div id="page-live-monitor" class="page">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div>
+            <div class="page-title">Live Call Monitor</div>
+            <div class="page-subtitle"><span class="live-badge"><span class="live-pulse"></span>Real-time active calls</span></div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="simulateLiveCall()">+ Simulate Call</button>
+        </div>
+      </div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+        <div class="kpi-card"><div class="kpi-label">Active Now</div><div class="kpi-value" id="live-active" style="color:var(--accent-green)">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Queued</div><div class="kpi-value" id="live-queued">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Avg Duration</div><div class="kpi-value" id="live-avg-dur">0s</div></div>
+        <div class="kpi-card"><div class="kpi-label">Dropped</div><div class="kpi-value" id="live-dropped" style="color:var(--accent-red)">0</div></div>
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">Active Calls</div>
+        <div id="live-calls-table">
+          <div class="empty-state">
+            <div class="empty-icon">📡</div>
+            <div style="font-size:14px;color:var(--text-secondary)">No active calls at the moment</div>
+            <p>Click "Simulate Call" to test the live monitor</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENTS PAGE -->
+    <div id="page-agents" class="page">
+      <div class="page-header">
+        <div class="page-header-row">
+          <div>
+            <div class="page-title">Agent Dashboard</div>
+            <div class="page-subtitle">Per-agent performance metrics</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openAddAgentModal()">+ Add Agent</button>
+        </div>
+      </div>
+      <div id="agents-content">
+        <div class="empty-state card">
+          <div class="empty-icon">👥</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text-secondary)">No agents yet</div>
+          <p>Agents are added when clients are onboarded.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSCRIPTOR PAGE -->
+    <div id="page-transcriptor" class="page">
+      <div class="page-header">
+        <div class="page-title">Call Transcriptor</div>
+        <div class="page-subtitle">Transcribe calls via microphone, file upload, or text paste</div>
+      </div>
+      <div class="tabs" style="max-width:480px">
+        <div class="tab active" onclick="switchTranscriptTab('mic',this)">🎙️ Live Mic</div>
+        <div class="tab" onclick="switchTranscriptTab('upload',this)">📁 Upload File</div>
+        <div class="tab" onclick="switchTranscriptTab('paste',this)">📋 Paste Text</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 380px;gap:20px">
+        <div>
+          <div id="transcript-mic-panel" class="card">
+            <div style="text-align:center;padding:30px 20px">
+              <div style="font-size:48px;margin-bottom:16px" id="mic-icon">🎙️</div>
+              <div style="font-size:14px;color:var(--text-secondary);margin-bottom:20px" id="mic-status">Click to start recording</div>
+              <div id="waveform" style="display:flex;align-items:center;justify-content:center;gap:3px;height:40px;margin-bottom:20px"></div>
+              <button class="btn btn-primary" id="mic-btn" onclick="toggleMic()" style="padding:12px 32px;font-size:15px">▶ Start Recording</button>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:16px" id="mic-timer">00:00</div>
+            </div>
+            <div id="transcript-output" style="background:var(--bg-dark);border-radius:8px;padding:16px;min-height:100px;font-size:13px;line-height:1.7;color:var(--text-secondary);display:none"></div>
+          </div>
+          <div id="transcript-upload-panel" class="card" style="display:none">
+            <div style="border:2px dashed var(--border);border-radius:10px;padding:40px;text-align:center;cursor:pointer" onclick="document.getElementById('file-input').click()" id="drop-zone">
+              <div style="font-size:36px;margin-bottom:12px">📁</div>
+              <div style="font-weight:600;margin-bottom:6px">Drop audio file here or click to browse</div>
+              <div style="font-size:12px;color:var(--text-muted)">MP3, WAV, MP4, M4A, OGG, FLAC (max 100MB)</div>
+              <input type="file" id="file-input" accept="audio/*,video/*" style="display:none" onchange="handleFileUpload(event)">
+            </div>
+            <div id="upload-result" style="margin-top:14px;display:none"></div>
+          </div>
+          <div id="transcript-paste-panel" class="card" style="display:none">
+            <div class="form-group">
+              <label class="form-label">Paste Transcript Text</label>
+              <textarea id="paste-text" rows="10" placeholder="Paste your call transcript here…" style="font-size:13px;line-height:1.7"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="analyzeText()">🧠 Analyze with AI</button>
+            <div id="paste-result" style="margin-top:14px"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="font-size:14px;font-weight:700;margin-bottom:16px">AI Analysis Output</div>
+          <div id="ai-output-panel">
+            <div style="font-size:12px;color:var(--text-muted);text-align:center;padding:40px 20px">
+              Start a transcription to see AI analysis here
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  </div><!-- /body-row -->
+</div><!-- /app -->
+
+<!-- ADD AGENT MODAL -->
+<div class="modal-overlay" id="modal-agent">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add New Agent</div>
+      <button class="modal-close" onclick="closeModal('modal-agent')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-group"><label class="form-label">Agent Name</label><input type="text" id="agent-name" placeholder="Jane Doe"></div>
+        <div class="form-group"><label class="form-label">Email</label><input type="email" id="agent-email" placeholder="jane@client.com"></div>
+        <div class="form-group"><label class="form-label">Client</label><select id="agent-client"></select></div>
+        <div class="form-group"><label class="form-label">Role</label><select><option>Agent</option><option>Senior Agent</option><option>Team Lead</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-agent')">Cancel</button>
+      <button class="btn btn-primary" onclick="addAgent()">Add Agent</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT DETAIL MODAL -->
+<div class="modal-overlay" id="modal-client-detail">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <div class="modal-title" id="detail-modal-title">Client Details</div>
+      <button class="modal-close" onclick="closeModal('modal-client-detail')">×</button>
+    </div>
+    <div class="modal-body" id="detail-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="deleteClientFromModal()">Delete Client</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-secondary" onclick="closeModal('modal-client-detail')">Close</button>
+      <button class="btn btn-primary" onclick="saveClientDetails()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- LOG CALL MODAL -->
+<div class="modal-overlay" id="modal-log-call">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title">📞 Log a Past Call</div>
+      <button class="modal-close" onclick="closeModal('modal-log-call')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="log-call-error" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 14px;font-size:13px;color:#f87171;margin-bottom:14px"></div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Client *</label>
+          <select id="log-client">
+            <option value="">Select client</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Agent Name *</label>
+          <input type="text" id="log-agent" placeholder="e.g. Priya S.">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date *</label>
+          <input type="date" id="log-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Time</label>
+          <input type="time" id="log-time">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration (mm:ss) *</label>
+          <input type="text" id="log-duration" placeholder="04:30" pattern="\d{1,2}:\d{2}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input type="tel" id="log-number" placeholder="+91 98000 00000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Call Type</label>
+          <select id="log-type">
+            <option>Inbound</option>
+            <option>Outbound</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status *</label>
+          <select id="log-status">
+            <option>Answered</option>
+            <option>Missed</option>
+            <option>Busy</option>
+            <option>Failed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sentiment</label>
+          <select id="log-sentiment">
+            <option>Positive</option>
+            <option>Neutral</option>
+            <option>Negative</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea id="log-notes" rows="2" placeholder="Call summary, key points…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-log-call')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLoggedCall()">Save Call Record</button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Step indicator */
+.step-dot {
+  width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+  background: var(--bg-card2); border: 2px solid var(--border); color: var(--text-muted);
+  transition: all .2s;
+}
+.step-dot.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.step-dot.done { background: var(--accent-green); border-color: var(--accent-green); color: #fff; }
+.step-line { flex: 1; height: 2px; background: var(--border); }
+
+/* Chat */
+#chat-box { height: 380px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.chat-msg { max-width: 80%; }
+.chat-msg.user { align-self: flex-end; }
+.chat-msg.ai { align-self: flex-start; }
+.chat-bubble {
+  padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6;
+}
+.chat-msg.user .chat-bubble { background: var(--accent); color: #fff; border-radius: 12px 12px 3px 12px; }
+.chat-msg.ai .chat-bubble { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 12px 12px 12px 3px; }
+.chat-meta { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+.chat-msg.user .chat-meta { text-align: right; }
+</style>
+
+<script>
+// =================== SUPABASE CONFIG ===================
+// Replace with your real values from supabase.com → Project Settings → API
+// Leave as-is to use local demo accounts only
+const SUPABASE_URL  = 'YOUR_SUPABASE_URL';   // e.g. https://xyzabc.supabase.co
+const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY';
+
+const SUPABASE_READY = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON !== 'YOUR_SUPABASE_ANON_KEY';
+
+// =================== LOCAL DEMO ACCOUNTS (always available) ===================
+const LOCAL_USERS_KEY = 'teledash-local-users';
+const LOCAL_SESSION_KEY = 'teledash-local-session';
+const DEMO_ACCOUNTS = [
+  { email:'admin@teledash.io',   password:'Admin@123',   name:'Admin User',   role:'Admin',   company:'TeleDash HQ', initials:'AD' },
+  { email:'manager@teledash.io', password:'Manager@123', name:'Manager User', role:'Manager', company:'TeleDash HQ', initials:'MG' },
+  { email:'agent@teledash.io',   password:'Agent@123',   name:'Agent User',   role:'Agent',   company:'TeleDash HQ', initials:'AG' },
+];
+
+function getLocalUsers() {
+  try {
+    const raw = localStorage.getItem(LOCAL_USERS_KEY);
+    const stored = raw ? JSON.parse(raw) : [];
+    // Always ensure demo accounts exist
+    DEMO_ACCOUNTS.forEach(d => {
+      if (!stored.find(u => u.email === d.email)) stored.push(d);
+    });
+    return stored;
+  } catch { return [...DEMO_ACCOUNTS]; }
+}
+function saveLocalUsers(users) { localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users)); }
+function getLocalUserSession() { try { return JSON.parse(localStorage.getItem(LOCAL_SESSION_KEY)); } catch { return null; } }
+function saveLocalUserSession(u) { localStorage.setItem(LOCAL_SESSION_KEY, JSON.stringify(u)); }
+function clearLocalUserSession() { localStorage.removeItem(LOCAL_SESSION_KEY); }
+
+// Supabase REST helpers (no SDK dependency — plain fetch)
+const sb = {
+  // Generic query builder
+  from: (table) => new SbQuery(table),
+  auth: {
+    async signUp({ email, password, options }) {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+        method: 'POST', headers: sbHeaders(),
+        body: JSON.stringify({ email, password, data: options?.data || {} })
+      });
+      return res.json();
+    },
+    async signIn({ email, password }) {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: 'POST', headers: sbHeaders(),
+        body: JSON.stringify({ email, password })
+      });
+      return res.json();
+    },
+    async signOut() {
+      const token = getLocalToken();
+      if (!token) return;
+      await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+        method: 'POST', headers: sbHeaders(token)
+      });
+    },
+    async getUser() {
+      const token = getLocalToken();
+      if (!token) return null;
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: sbHeaders(token)
+      });
+      if (!res.ok) return null;
+      return res.json();
+    }
+  }
+};
+
+function sbHeaders(token) {
+  const h = {
+    'Content-Type': 'application/json',
+    'apikey': SUPABASE_ANON,
+    'Authorization': `Bearer ${token || SUPABASE_ANON}`
+  };
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
+}
+
+class SbQuery {
+  constructor(table) {
+    this._table = table; this._filters = []; this._select = '*';
+    this._order = null; this._limit = null; this._single = false;
+    this._upsert = false; this._method = 'GET'; this._body = null;
+  }
+  select(cols = '*') { this._select = cols; return this; }
+  eq(col, val) { this._filters.push(`${col}=eq.${encodeURIComponent(val)}`); return this; }
+  gte(col, val) { this._filters.push(`${col}=gte.${encodeURIComponent(val)}`); return this; }
+  lte(col, val) { this._filters.push(`${col}=lte.${encodeURIComponent(val)}`); return this; }
+  in(col, arr) { this._filters.push(`${col}=in.(${arr.map(v=>encodeURIComponent(v)).join(',')})`); return this; }
+  order(col, { ascending = true } = {}) { this._order = `${col}.${ascending?'asc':'desc'}`; return this; }
+  limit(n) { this._limit = n; return this; }
+  single() { this._single = true; return this; }
+  insert(data) { this._method='POST'; this._body=data; return this; }
+  update(data) { this._method='PATCH'; this._body=data; return this; }
+  upsert(data) { this._method='POST'; this._body=data; this._upsert=true; return this; }
+  delete() { this._method='DELETE'; return this; }
+  async execute() {
+    const token = getLocalToken();
+    let url = `${SUPABASE_URL}/rest/v1/${this._table}?select=${encodeURIComponent(this._select)}`;
+    this._filters.forEach(f => { url += `&${f}`; });
+    if (this._order) url += `&order=${this._order}`;
+    if (this._limit) url += `&limit=${this._limit}`;
+    const headers = sbHeaders(token);
+    if (this._upsert) headers['Prefer'] = 'resolution=merge-duplicates';
+    if (this._method === 'POST' || this._method === 'PATCH')
+      headers['Prefer'] = (headers['Prefer'] ? headers['Prefer'] + ',' : '') + 'return=representation';
+    const opts = { method: this._method, headers };
+    if (this._body) opts.body = JSON.stringify(this._body);
+    const res = await fetch(url, opts);
+    const text = await res.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch { data = null; }
+    if (!res.ok) return { data: null, error: data || { message: res.statusText } };
+    if (this._single) return { data: Array.isArray(data) ? data[0] : data, error: null };
+    return { data: data || [], error: null };
+  }
+}
+
+// =================== SESSION (localStorage — only tokens & UI prefs) ===================
+const SESSION_KEY = 'teledash-session-v2';
+function getLocalToken() {
+  try { const s = JSON.parse(localStorage.getItem(SESSION_KEY)); return s?.access_token || null; } catch { return null; }
+}
+function saveLocalSession(data) { localStorage.setItem(SESSION_KEY, JSON.stringify(data)); }
+function clearLocalSession() { localStorage.removeItem(SESSION_KEY); }
+function getLocalSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch { return null; }
+}
+
+// =================== STATE ===================
+const state = {
+  clients: [],
+  agents: [],
+  liveCalls: [],
+  callRecords: {},    // in-memory cache { clientId: [...] }
+  activeClientId: '',
+  currentDetailClientId: null,
+  currentUser: null,
+  micActive: false,
+  micInterval: null,
+  micTime: 0,
+  chatHistory: [],
+  loading: false,
+};
+
+// =================== UI LOADING HELPER ===================
+function setLoading(on, msg = 'Loading…') {
+  let el = document.getElementById('global-loader');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'global-loader';
+    el.style.cssText = `position:fixed;bottom:70px;right:24px;z-index:9999;background:var(--bg-card);
+      border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:13px;
+      color:var(--text-secondary);display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.3)`;
+    document.body.appendChild(el);
+  }
+  if (on) { el.innerHTML = `<span style="animation:spin .8s linear infinite;display:inline-block">⟳</span> ${msg}`; el.style.display='flex'; }
+  else     { el.style.display='none'; }
+}
+
+// =================== SUPABASE DATA LAYER ===================
+
+// --- CLIENTS ---
+async function dbLoadClients() {
+  if (!SUPABASE_READY) { loadSharedData(); return; }
+  const { data, error } = await sb.from('clients').select('*').order('onboarded_at', {ascending:false}).execute();
+  if (error) { console.error('loadClients:', error); loadSharedData(); return; }
+  state.clients = (data || []).map(dbClientToState);
+}
+
+async function dbInsertClient(client) {
+  if (!SUPABASE_READY) {
+    // localStorage fallback
+    state.clients.unshift(client);
+    saveSharedData();
+    return;
+  }
+  const row = stateClientToDb(client);
+  const { data, error } = await sb.from('clients').insert(row).execute();
+  if (error) throw new Error(error.message || 'Failed to save client');
+  const inserted = Array.isArray(data) ? data[0] : data;
+  if (inserted) state.clients.unshift(dbClientToState(inserted));
+  else await dbLoadClients();
+}
+
+async function dbUpdateClient(id, changes) {
+  if (!SUPABASE_READY) {
+    const c = state.clients.find(x => x.id === id);
+    if (c) Object.assign(c, {
+      company: changes.company ?? c.company,
+      email: changes.email ?? c.email,
+      contact: changes.contact ?? c.contact,
+      phone: changes.phone ?? c.phone,
+      status: changes.status ?? c.status,
+      plan: changes.plan ?? c.plan,
+      callsToday: changes.calls_today ?? c.callsToday,
+      answered: changes.answered ?? c.answered,
+      missed: changes.missed ?? c.missed,
+      industry: changes.industry ?? c.industry,
+      notes: changes.notes ?? c.notes,
+    });
+    saveSharedData(); return;
+  }
+  const { error } = await sb.from('clients').update(changes).eq('id', id).execute();
+  if (error) throw new Error(error.message || 'Failed to update client');
+  await dbLoadClients();
+}
+
+async function dbDeleteClient(id) {
+  if (!SUPABASE_READY) {
+    state.clients = state.clients.filter(c => c.id !== id);
+    delete state.callRecords[id];
+    saveSharedData(); return;
+  }
+  const { error } = await sb.from('clients').delete().eq('id', id).execute();
+  if (error) throw new Error(error.message || 'Failed to delete client');
+  state.clients = state.clients.filter(c => c.id !== id);
+}
+
+function dbClientToState(row) {
+  return {
+    id:          row.id,
+    company:     row.company,
+    contact:     row.contact || '',
+    email:       row.email || '',
+    phone:       row.phone || '',
+    industry:    row.industry || '',
+    country:     row.country || 'India',
+    plan:        row.plan || 'Starter',
+    status:      row.status || 'Active',
+    maxAgents:   row.max_agents || 10,
+    callLimit:   row.call_limit || 5000,
+    startDate:   row.start_date || '',
+    notes:       row.notes || '',
+    features:    row.features || [],
+    callsToday:  row.calls_today || 0,
+    answered:    row.answered || 0,
+    missed:      row.missed || 0,
+    onboardedAt: row.onboarded_at || row.created_at,
+  };
+}
+
+function stateClientToDb(c) {
+  return {
+    id:           c.id,
+    company:      c.company,
+    contact:      c.contact,
+    email:        c.email,
+    phone:        c.phone,
+    industry:     c.industry,
+    country:      c.country,
+    plan:         c.plan,
+    status:       c.status,
+    max_agents:   c.maxAgents,
+    call_limit:   c.callLimit,
+    start_date:   c.startDate || new Date().toISOString().slice(0,10),
+    notes:        c.notes,
+    features:     c.features,
+    calls_today:  c.callsToday || 0,
+    answered:     c.answered || 0,
+    missed:       c.missed || 0,
+  };
+}
+
+// --- AGENTS ---
+async function dbLoadAgents(clientId) {
+  if (!SUPABASE_READY) { loadSharedData(); return; }
+  const q = sb.from('agents').select('*').order('created_at');
+  if (clientId) q.eq('client_id', clientId);
+  const { data, error } = await q.execute();
+  if (error) { console.error('loadAgents:', error); return; }
+  state.agents = (data || []).map(r => ({
+    id: r.id, clientId: r.client_id, name: r.name, email: r.email || '', role: r.role || 'Agent'
+  }));
+}
+
+async function dbInsertAgent(agent) {
+  if (!SUPABASE_READY) {
+    state.agents.push({ id: 'a_'+Date.now(), clientId: agent.clientId, name: agent.name, email: agent.email||'', role: agent.role||'Agent' });
+    saveSharedData(); return;
+  }
+  const { data, error } = await sb.from('agents').insert({
+    client_id: agent.clientId, name: agent.name, email: agent.email, role: agent.role || 'Agent'
+  }).execute();
+  if (error) throw new Error(error.message);
+  await dbLoadAgents();
+}
+
+// --- CALL RECORDS ---
+async function dbInsertCallRecord(rec) {
+  if (!SUPABASE_READY) {
+    // store in local callRecords cache
+    if (!state.callRecords[rec.clientId]) state.callRecords[rec.clientId] = [];
+    state.callRecords[rec.clientId].unshift(rec);
+    if (state.callRecords[rec.clientId].length > 500) state.callRecords[rec.clientId].length = 500;
+    saveSharedData(); return;
+  }
+  const { data, error } = await sb.from('call_records').insert({
+    call_ref:    rec.id,
+    client_id:   rec.clientId,
+    client_name: rec.client,
+    agent:       rec.agent,
+    phone_number: rec.number || '',
+    call_type:   rec.type || 'Inbound',
+    status:      rec.status,
+    sentiment:   rec.sentiment,
+    duration:    rec.duration,
+    duration_sec: rec.durationSec || 0,
+    call_date:   rec.date,
+    call_time:   rec.time ? rec.time + ':00' : null,
+    notes:       rec.notes || '',
+    source:      rec.source || 'manual',
+  }).execute();
+  if (error) { console.error('insertCallRecord:', error); return; }
+  delete state.callRecords[rec.clientId]; // invalidate cache
+}
+
+async function dbLoadCallRecords(clientId, { fromDate, toDate, status, sentiment, limit = 500 } = {}) {
+  if (!SUPABASE_READY) {
+    // filter from local cache
+    const all = state.callRecords[clientId] || [];
+    return all.filter(r => {
+      if (fromDate  && r.date < fromDate)           return false;
+      if (toDate    && r.date > toDate)             return false;
+      if (status    && r.status !== status)         return false;
+      if (sentiment && r.sentiment !== sentiment)   return false;
+      return true;
+    });
+  }
+  const cacheKey = clientId+(fromDate||'')+(toDate||'')+(status||'')+(sentiment||'');
+  if (state.callRecords[cacheKey]) return state.callRecords[cacheKey];
+
+  const q = sb.from('call_records')
+    .select('id,call_ref,client_id,client_name,agent,phone_number,call_type,status,sentiment,duration,duration_sec,call_date,call_time,notes,source,ai_summary,qa_score,created_at')
+    .eq('client_id', clientId)
+    .order('call_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (fromDate)  q.gte('call_date', fromDate);
+  if (toDate)    q.lte('call_date', toDate);
+  if (status)    q.eq('status', status);
+  if (sentiment) q.eq('sentiment', sentiment);
+
+  const { data, error } = await q.execute();
+  if (error) { console.error('loadCallRecords:', error); return []; }
+
+  const records = (data || []).map(r => ({
+    id:          r.call_ref || r.id,
+    clientId:    r.client_id,
+    client:      r.client_name,
+    agent:       r.agent,
+    number:      r.phone_number || '',
+    type:        r.call_type || 'Inbound',
+    status:      r.status,
+    sentiment:   r.sentiment,
+    duration:    r.duration,
+    durationSec: r.duration_sec || 0,
+    date:        r.call_date,
+    time:        r.call_time ? r.call_time.slice(0,5) : '',
+    notes:       r.notes || '',
+    source:      r.source,
+    summary:     r.ai_summary || '',
+    qaScore:     r.qa_score || null,
+  }));
+
+  state.callRecords[cacheKey] = records;
+  return records;
+}
+
+async function dbGetCallRecords(clientId, filters = {}) {
+  return dbLoadCallRecords(clientId, filters);
+}
+
+// Update client counters in DB
+async function dbIncrementClientCalls(clientId, status) {
+  const c = state.clients.find(x => x.id === clientId);
+  if (!c) return;
+  c.callsToday = (c.callsToday || 0) + 1;
+  if (status === 'Answered') c.answered = (c.answered || 0) + 1;
+  else                       c.missed   = (c.missed   || 0) + 1;
+  if (!SUPABASE_READY) { saveSharedData(); return; }
+  await sb.from('clients').update({
+    calls_today: c.callsToday, answered: c.answered, missed: c.missed,
+  }).eq('id', clientId).execute();
+}
+
+// =================== LEGACY COMPAT SHIMS ===================
+// These let the rest of the codebase work without rewriting every call site
+
+async function recordCall(clientId, callObj) {
+  await dbInsertCallRecord(callObj);
+  // Keep local cache fresh
+  if (!state.callRecords[clientId]) state.callRecords[clientId] = [];
+  state.callRecords[clientId].unshift(callObj);
+}
+
+async function getCallRecords(clientId, filters = {}) {
+  return dbGetCallRecords(clientId, filters);
+}
+
+// =================== LOCAL DATA PERSISTENCE ===================
+// Used when Supabase is not configured — full localStorage fallback
+const SHARED_DATA_KEY = 'teledash-shared-data-v2';
+
+function saveSharedData() {
+  try {
+    localStorage.setItem(SHARED_DATA_KEY, JSON.stringify({
+      clients:     state.clients,
+      agents:      state.agents,
+      callRecords: state.callRecords,
+    }));
+  } catch(e) { console.warn('saveSharedData:', e); }
+}
+
+function loadSharedData() {
+  try {
+    const raw = localStorage.getItem(SHARED_DATA_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state.clients     = parsed.clients     || [];
+      state.agents      = parsed.agents      || [];
+      state.callRecords = parsed.callRecords || {};
+    }
+  } catch(e) { console.warn('loadSharedData:', e); }
+}
+
+
+// =================== NAVIGATION ===================
+document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+  item.addEventListener('click', () => showPage(item.dataset.page));
+});
+async function onPageEnter(page) {
+  syncAllPageSelects();
+  syncPageClientBadges(page);
+  if (page === 'dashboard')       refreshDashboard();
+  if (page === 'analytics')       await renderAnalytics();
+  if (page === 'reports')         { if (state.activeClientId) await runReport(); }
+  if (page === 'ai-intelligence') renderAiIntelligence();
+  if (page === 'ai-chat')         initChat();
+  if (page === 'clients')         renderClientsList();
+  if (page === 'onboarding')      { updateOnboardingStats(); clearOnboardForm(); }
+  if (page === 'agents')          renderAgentsPage();
+  if (page === 'token-usage')     renderTokenUsage();
+}
+
+// =================== TOAST ===================
+function toast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.innerHTML = (type === 'success' ? '✅' : '❌') + ' ' + msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// =================== MODAL ===================
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+
+// =================== DASHBOARD ===================
+function refreshDashboard() {
+  const total = state.clients.reduce((s, c) => s + (c.callsToday || 0), 0);
+  const answered = state.clients.reduce((s, c) => s + (c.answered || 0), 0);
+  const missed = state.clients.reduce((s, c) => s + (c.missed || 0), 0);
+  const active = state.clients.filter(c => c.status === 'Active').length;
+
+  document.getElementById('kpi-total').textContent = total;
+  document.getElementById('kpi-answered').textContent = answered;
+  document.getElementById('kpi-missed').textContent = missed;
+  document.getElementById('kpi-clients').textContent = active;
+
+  if (state.clients.length > 0) {
+    document.getElementById('kpi-clients-trend').textContent = `${state.clients.length} total clients`;
+    document.getElementById('kpi-total-trend').className = 'kpi-trend up';
+    document.getElementById('kpi-total-trend').textContent = `↑ ${total} calls recorded`;
+  }
+
+  renderDashClientTable();
+  initDashCharts();
+}
+function renderDashClientTable() {
+  const wrap = document.getElementById('dash-client-table-wrap');
+  if (!state.clients.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">🏢</div><div style="font-size:14px;font-weight:600;color:var(--text-secondary)">No clients yet</div><p>Go to <a href="#" onclick="showPage('onboarding')" style="color:var(--accent)">Client Onboarding</a> to add your first client.</p></div>`;
+    return;
+  }
+  wrap.innerHTML = `<div class="table-wrap"><table><thead><tr>
+    <th>Client</th><th>Industry</th><th>Plan</th><th>Status</th><th>Calls Today</th><th>Answered</th><th>Missed</th><th>Actions</th>
+  </tr></thead><tbody>${state.clients.map(c => `<tr>
+    <td><strong>${c.company}</strong><div style="font-size:11px;color:var(--text-muted)">${c.email}</div></td>
+    <td>${c.industry}</td>
+    <td><span class="badge badge-blue">${c.plan}</span></td>
+    <td>${statusBadge(c.status)}</td>
+    <td>${c.callsToday || 0}</td>
+    <td style="color:var(--accent-green)">${c.answered || 0}</td>
+    <td style="color:var(--accent-red)">${c.missed || 0}</td>
+    <td><button class="btn btn-secondary btn-sm" onclick="openClientDetail('${c.id}')">View</button></td>
+  </tr>`).join('')}</tbody></table></div>`;
+}
+
+let dashCallChart, dashDonutChart;
+function initDashCharts() {
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const vals = state.clients.length ? days.map(() => Math.floor(Math.random()*50+10)) : days.map(() => 0);
+
+  if (dashCallChart) dashCallChart.destroy();
+  dashCallChart = new Chart(document.getElementById('dashCallChart').getContext('2d'), {
+    type: 'bar',
+    data: { labels: days, datasets: [{
+      label: 'Calls', data: vals,
+      backgroundColor: 'rgba(108,99,255,.5)', borderColor: '#6c63ff', borderWidth: 1.5, borderRadius: 4
+    }]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { grid: { color: '#252836' }, ticks: { color: '#8b8fa8' } }, y: { grid: { color: '#252836' }, ticks: { color: '#8b8fa8' } } }
+    }
+  });
+
+  const total = state.clients.reduce((s,c)=>s+(c.callsToday||0),0);
+  const answered = state.clients.reduce((s,c)=>s+(c.answered||0),0);
+  const missed = state.clients.reduce((s,c)=>s+(c.missed||0),0);
+  const other = Math.max(0, total - answered - missed);
+
+  if (dashDonutChart) dashDonutChart.destroy();
+  dashDonutChart = new Chart(document.getElementById('dashDonutChart').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: ['Answered','Missed','Other'], datasets: [{
+      data: [answered, missed, other], backgroundColor: ['#22c55e','#ef4444','#6c63ff'], borderWidth: 0
+    }]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#8b8fa8', font: { size: 12 } } } } }
+  });
+}
+
+// =================== GLOBAL CLIENT FILTER ===================
+function populateGlobalClientSelect() {
+  const el = document.getElementById('global-client-select');
+  if (!el) return;
+  el.innerHTML = '<option value="">All Clients</option>' +
+    state.clients.map(c => `<option value="${c.id}">${c.company}</option>`).join('');
+  el.value = state.activeClientId || '';
+}
+
+function onGlobalClientChange() {
+  const el = document.getElementById('global-client-select');
+  state.activeClientId = el ? el.value : '';
+  const dot = document.getElementById('global-client-dot');
+  if (dot) dot.classList.toggle('visible', !!state.activeClientId);
+  syncAllPageSelects();
+  const activePage = document.querySelector('.page.active');
+  if (activePage) {
+    const page = activePage.id.replace('page-', '');
+    triggerPageRender(page);
+  }
+}
+
+function syncAllPageSelects() {
+  ['analytics-client-select','rpt-client','ai-client-select','chat-client-select'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '<option value=""></option>' +
+      state.clients.map(c => `<option value="${c.id}">${c.company}</option>`).join('');
+    el.value = state.activeClientId || '';
+  });
+}
+
+function syncPageClientBadges(page) {
+  const client = state.clients.find(c => c.id === state.activeClientId);
+  const badgeMap = {
+    'analytics':       ['analytics-client-badge','analytics-no-client'],
+    'reports':         ['reports-client-badge','reports-no-client'],
+    'ai-intelligence': ['ai-intel-client-badge','ai-intel-no-client'],
+    'ai-chat':         ['ai-chat-client-badge','ai-chat-no-client'],
+  };
+  const ids = badgeMap[page];
+  if (!ids) return;
+  const badge = document.getElementById(ids[0]);
+  const noSel = document.getElementById(ids[1]);
+  if (badge) { badge.textContent = client ? '🏢 ' + client.company : ''; badge.style.display = client ? 'inline-flex' : 'none'; }
+  if (noSel) { noSel.style.display = client ? 'none' : 'inline'; }
+}
+
+async function triggerPageRender(page) {
+  syncAllPageSelects();
+  syncPageClientBadges(page);
+  if (page === 'dashboard')       refreshDashboard();
+  if (page === 'analytics')       await renderAnalytics();
+  if (page === 'reports')         { if (state.activeClientId) await runReport(); }
+  if (page === 'ai-intelligence') renderAiIntelligence();
+  if (page === 'ai-chat')         initChat();
+}
+
+// =================== CLIENT SELECT ===================
+function populateClientSelect(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = '<option value="">Select client</option>' +
+    state.clients.map(c => `<option value="${c.id}">${c.company}</option>`).join('');
+  el.value = state.activeClientId || '';
+}
+
+function updateAllClientSelects() {
+  populateGlobalClientSelect();
+  syncAllPageSelects();
+  ['agent-client','dash-chart-filter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isFilter = id === 'dash-chart-filter';
+    el.innerHTML = (isFilter ? '<option>All Clients</option>' : '<option value="">Select client</option>') +
+      state.clients.map(c => `<option value="${c.id}">${c.company}</option>`).join('');
+  });
+}
+function updateBadges() {
+  document.getElementById('client-count-badge').textContent = state.clients.length;
+}
+function renderClientsList() {
+  const search = (document.getElementById('client-search')?.value || '').toLowerCase();
+  const statusFilter = document.getElementById('client-status-filter')?.value || '';
+  let filtered = state.clients.filter(c => {
+    const matchSearch = !search || c.company.toLowerCase().includes(search) || c.email.toLowerCase().includes(search);
+    const matchStatus = !statusFilter || c.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+  document.getElementById('client-count-display').textContent = `${filtered.length} client${filtered.length !== 1 ? 's' : ''}`;
+  const grid = document.getElementById('clients-grid');
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state card"><div class="empty-icon">🏢</div><div style="font-size:14px;color:var(--text-secondary)">${state.clients.length ? 'No clients match your filter' : 'No clients onboarded yet'}</div><p><a href="#" onclick="showPage('onboarding')" style="color:var(--accent)">Onboard your first client</a></p></div>`;
+    return;
+  }
+  grid.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">${filtered.map(c => `
+    <div class="card" style="cursor:pointer;transition:border-color .2s" onclick="openClientDetail('${c.id}')" onmouseenter="this.style.borderColor='#6c63ff'" onmouseleave="this.style.borderColor='#252836'">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#6c63ff,#4f9dff);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700">${c.company[0]}</div>
+          <div>
+            <div style="font-weight:700;font-size:14px">${c.company}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${c.industry}</div>
+          </div>
+        </div>
+        ${statusBadge(c.status)}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:12px">
+        <div style="background:var(--bg-dark);border-radius:7px;padding:8px;border:1px solid var(--border)">
+          <div style="font-size:18px;font-weight:700">${c.callsToday||0}</div>
+          <div style="font-size:10px;color:var(--text-muted)">Today</div>
+        </div>
+        <div style="background:var(--bg-dark);border-radius:7px;padding:8px;border:1px solid var(--border)">
+          <div style="font-size:18px;font-weight:700;color:var(--accent-green)">${c.answered||0}</div>
+          <div style="font-size:10px;color:var(--text-muted)">Answered</div>
+        </div>
+        <div style="background:var(--bg-dark);border-radius:7px;padding:8px;border:1px solid var(--border)">
+          <div style="font-size:18px;font-weight:700;color:var(--accent-red)">${c.missed||0}</div>
+          <div style="font-size:10px;color:var(--text-muted)">Missed</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between">
+        <span>📧 ${c.email}</span>
+        <span>📅 ${c.startDate || '—'}</span>
+      </div>
+    </div>`).join('')}</div>`;
+}
+function statusBadge(s) {
+  const map = { Active: 'badge-green', Trial: 'badge-yellow', Inactive: 'badge-gray' };
+  return `<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;
+}
+
+// =================== ONBOARDING ===================
+function clearOnboardForm() {
+  ['ob-company','ob-contact','ob-email','ob-phone','ob-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['ob-industry','ob-country','ob-plan','ob-status'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.selectedIndex = 0;
+  });
+  const errEl = document.getElementById('ob-error');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+}
+
+async function submitOnboarding() {
+  const company = document.getElementById('ob-company').value.trim();
+  const contact = document.getElementById('ob-contact').value.trim();
+  const email   = document.getElementById('ob-email').value.trim();
+
+  const errEl = document.getElementById('ob-error');
+  const showErr = (msg) => { errEl.textContent = msg; errEl.style.display = 'block'; errEl.scrollIntoView({behavior:'smooth',block:'nearest'}); };
+
+  errEl.style.display = 'none';
+
+  if (!company)                          { showErr('⚠️ Company Name is required.'); return; }
+  if (!contact)                          { showErr('⚠️ Primary Contact Name is required.'); return; }
+  if (!email || !/\S+@\S+\.\S+/.test(email)) { showErr('⚠️ A valid Contact Email is required.'); return; }
+  if (state.clients.find(c => c.email.toLowerCase() === email.toLowerCase())) {
+    showErr('⚠️ A client with this email is already onboarded.'); return;
+  }
+
+  const client = {
+    id:         'c_' + Date.now(),
+    company,
+    contact,
+    email,
+    phone:      document.getElementById('ob-phone').value.trim(),
+    industry:   document.getElementById('ob-industry').value,
+    country:    document.getElementById('ob-country').value,
+    plan:       document.getElementById('ob-plan').value.split('—')[0].trim(),
+    status:     document.getElementById('ob-status').value,
+    maxAgents:  10,
+    callLimit:  5000,
+    startDate:  new Date().toISOString().slice(0, 10),
+    notes:      document.getElementById('ob-notes').value.trim(),
+    features:   ['AI Analysis', 'Transcription', 'Reports'],
+    callsToday: 0,
+    answered:   0,
+    missed:     0,
+    onboardedAt: new Date().toISOString(),
+  };
+
+  try {
+    setLoading(true, 'Saving client…');
+    await dbInsertClient(client);
+    setLoading(false);
+    updateAllClientSelects();
+    populateGlobalClientSelect();
+    updateOnboardingStats();
+    updateBadges();
+    clearOnboardForm();
+    toast(`✨ ${company} successfully onboarded!`);
+  } catch(e) {
+    setLoading(false);
+    showErr(e.message || 'Failed to save client. Check your Supabase connection.');
+  }
+}
+function updateOnboardingStats() {
+  document.getElementById('stat-total-clients').textContent = state.clients.length;
+  document.getElementById('stat-active-clients').textContent = state.clients.filter(c=>c.status==='Active').length;
+  document.getElementById('stat-trial-clients').textContent = state.clients.filter(c=>c.status==='Trial').length;
+  document.getElementById('stat-inactive-clients').textContent = state.clients.filter(c=>c.status==='Inactive').length;
+  const list = document.getElementById('recent-onboard-list');
+  const recent = [...state.clients].reverse().slice(0,5);
+  list.innerHTML = recent.length ? recent.map(c=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#6c63ff,#4f9dff);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">${c.company[0]}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">${c.company}</div><div style="font-size:11px;color:var(--text-muted)">${c.startDate}</div></div>
+      ${statusBadge(c.status)}
+    </div>`).join('') : `<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px">No clients yet</div>`;
+}
+// =================== CLIENT DETAIL MODAL ===================
+function openClientDetail(id) {
+  const c = state.clients.find(x=>x.id===id);
+  if (!c) return;
+  state.currentDetailClientId = id;
+  document.getElementById('detail-modal-title').textContent = c.company + ' — Details';
+  document.getElementById('detail-modal-body').innerHTML = `
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Company Name</label><input id="edit-company" value="${c.company}"></div>
+      <div class="form-group"><label class="form-label">Contact Email</label><input id="edit-email" value="${c.email}"></div>
+      <div class="form-group"><label class="form-label">Contact Name</label><input id="edit-contact" value="${c.contact||''}"></div>
+      <div class="form-group"><label class="form-label">Phone</label><input id="edit-phone" value="${c.phone||''}"></div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select id="edit-status">
+          <option ${c.status==='Active'?'selected':''}>Active</option>
+          <option ${c.status==='Trial'?'selected':''}>Trial</option>
+          <option ${c.status==='Inactive'?'selected':''}>Inactive</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Plan</label>
+        <select id="edit-plan">
+          <option ${c.plan==='Starter'?'selected':''}>Starter</option>
+          <option ${c.plan==='Growth'?'selected':''}>Growth</option>
+          <option ${c.plan==='Pro'?'selected':''}>Pro</option>
+          <option ${c.plan==='Enterprise'?'selected':''}>Enterprise</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Calls Today</label><input id="edit-callstoday" type="number" value="${c.callsToday||0}"></div>
+      <div class="form-group"><label class="form-label">Answered</label><input id="edit-answered" type="number" value="${c.answered||0}"></div>
+      <div class="form-group"><label class="form-label">Missed</label><input id="edit-missed" type="number" value="${c.missed||0}"></div>
+      <div class="form-group"><label class="form-label">Industry</label><input value="${c.industry||''}" id="edit-industry"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea id="edit-notes" rows="3">${c.notes||''}</textarea></div>
+    <div style="margin-top:8px;padding:10px;background:var(--bg-dark);border-radius:8px;border:1px solid var(--border)">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">FEATURES ENABLED</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${(c.features||[]).map(f=>`<span class="badge badge-purple">${f}</span>`).join('') || '<span style="font-size:12px;color:var(--text-muted)">None</span>'}</div>
+    </div>`;
+  openModal('modal-client-detail');
+}
+async function saveClientDetails() {
+  const c = state.clients.find(x=>x.id===state.currentDetailClientId);
+  if (!c) return;
+  c.company  = document.getElementById('edit-company').value;
+  c.email    = document.getElementById('edit-email').value;
+  c.contact  = document.getElementById('edit-contact').value;
+  c.phone    = document.getElementById('edit-phone').value;
+  c.status   = document.getElementById('edit-status').value;
+  c.plan     = document.getElementById('edit-plan').value;
+  c.callsToday = parseInt(document.getElementById('edit-callstoday').value)||0;
+  c.answered = parseInt(document.getElementById('edit-answered').value)||0;
+  c.missed   = parseInt(document.getElementById('edit-missed').value)||0;
+  c.industry = document.getElementById('edit-industry').value;
+  c.notes    = document.getElementById('edit-notes').value;
+  try {
+    setLoading(true, 'Saving…');
+    await dbUpdateClient(c.id, {
+      company: c.company, email: c.email, contact: c.contact, phone: c.phone,
+      status: c.status, plan: c.plan, calls_today: c.callsToday,
+      answered: c.answered, missed: c.missed, industry: c.industry, notes: c.notes,
+    });
+    setLoading(false);
+    closeModal('modal-client-detail');
+    renderClientsList(); updateOnboardingStats(); refreshDashboard();
+    toast('Client details updated');
+  } catch(e) { setLoading(false); toast('Failed to save: '+e.message, 'error'); }
+}
+async function deleteClientFromModal() {
+  const id = state.currentDetailClientId;
+  try {
+    setLoading(true, 'Deleting…');
+    await dbDeleteClient(id);
+    setLoading(false);
+    closeModal('modal-client-detail');
+    renderClientsList(); updateOnboardingStats();
+    updateAllClientSelects(); populateGlobalClientSelect();
+    updateBadges(); refreshDashboard();
+    toast('Client removed');
+  } catch(e) { setLoading(false); toast('Failed to delete: '+e.message, 'error'); }
+}
+
+// =================== ANALYTICS ===================
+async function renderAnalytics() {
+  const id = document.getElementById('analytics-client-select').value;
+  const content = document.getElementById('analytics-content');
+  if (!id) {
+    content.innerHTML = `<div class="empty-state card"><div class="empty-icon">📈</div><div style="font-size:14px;font-weight:600;color:var(--text-secondary)">Select a client from the top bar to view analytics</div></div>`;
+    return;
+  }
+  const c = state.clients.find(x=>x.id===id);
+  setLoading(true, 'Loading analytics…');
+  const records = await getCallRecords(id);
+  setLoading(false);
+
+  // Build last-7-days labels
+  const dayLabels = [];
+  const dayCounts = [];
+  for (let i=6; i>=0; i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const key = d.toISOString().slice(0,10);
+    dayLabels.push(d.toLocaleDateString('en',{weekday:'short'}));
+    dayCounts.push(records.filter(r=>r.date===key).length);
+  }
+
+  const total     = records.length;
+  const answered  = records.filter(r=>r.status==='Answered').length;
+  const ansRate   = total ? Math.round((answered/total)*100) : 0;
+  const avgDurSec = total ? Math.round(records.reduce((s,r)=>s+(r.durationSec||0),0)/total) : 0;
+  const avgDur    = formatDuration(avgDurSec);
+  const posCount  = records.filter(r=>r.sentiment==='Positive').length;
+  const neuCount  = records.filter(r=>r.sentiment==='Neutral').length;
+  const negCount  = records.filter(r=>r.sentiment==='Negative').length;
+  const domSent   = posCount>=neuCount && posCount>=negCount ? 'Positive' : neuCount>=negCount ? 'Neutral' : 'Negative';
+  const sentColor = domSent==='Positive' ? 'var(--accent-green)' : domSent==='Negative' ? 'var(--accent-red)' : 'var(--accent-yellow)';
+
+  content.innerHTML = `
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+      <div class="kpi-card"><div class="kpi-label">Total Calls</div><div class="kpi-value">${total}</div><div class="kpi-trend">${total ? 'All time' : 'No calls logged yet'}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Avg Duration</div><div class="kpi-value">${avgDur}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Answer Rate</div><div class="kpi-value" style="color:var(--accent-green)">${ansRate}%</div><div class="kpi-trend">${answered} answered / ${total} total</div></div>
+      <div class="kpi-card"><div class="kpi-label">Dominant Sentiment</div><div class="kpi-value" style="color:${sentColor};font-size:18px">${total ? domSent : '—'}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">Daily Call Volume — Last 7 Days</div>
+        <div class="chart-box"><canvas id="analyticsLineChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">Sentiment Breakdown</div>
+        <div class="chart-box"><canvas id="analyticsSentChart"></canvas></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">Call Status Distribution</div>
+        <div class="chart-box"><canvas id="analyticsStatusChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">Recent Calls</div>
+        ${records.length ? `<div class="table-wrap"><table>
+          <thead><tr><th>Date</th><th>Agent</th><th>Duration</th><th>Status</th><th>Sentiment</th></tr></thead>
+          <tbody>${records.slice(0,8).map(r=>`<tr>
+            <td style="font-size:12px">${r.date} ${r.time||''}</td>
+            <td>${r.agent}</td><td style="font-family:var(--mono)">${r.duration}</td>
+            <td><span class="badge ${r.status==='Answered'?'badge-green':r.status==='Missed'?'badge-red':'badge-yellow'}">${r.status}</span></td>
+            <td><span class="badge ${r.sentiment==='Positive'?'badge-green':r.sentiment==='Negative'?'badge-red':'badge-yellow'}">${r.sentiment}</span></td>
+          </tr>`).join('')}</tbody>
+        </table></div>` : `<div class="empty-state"><div class="empty-icon" style="font-size:28px">📞</div><div style="font-size:13px;color:var(--text-secondary)">No call records yet</div><p>Use Live Monitor or log calls manually in Reports</p></div>`}
+      </div>
+    </div>`;
+
+  setTimeout(() => {
+    const gridColor = '#252836';
+    const tickColor = '#8b8fa8';
+    new Chart(document.getElementById('analyticsLineChart').getContext('2d'), {
+      type: 'bar',
+      data: { labels: dayLabels, datasets: [
+        { label: 'Calls', data: dayCounts, backgroundColor: 'rgba(108,99,255,.5)', borderColor: '#6c63ff', borderWidth: 1.5, borderRadius: 4 }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { x: { grid:{color:gridColor}, ticks:{color:tickColor} }, y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:tickColor,stepSize:1} } }
+      }
+    });
+    new Chart(document.getElementById('analyticsSentChart').getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: ['Positive','Neutral','Negative'], datasets: [{ data: [posCount||0, neuCount||0, negCount||0], backgroundColor: ['#22c55e','#f59e0b','#ef4444'], borderWidth: 0 }]},
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: tickColor, font:{size:11} } } } }
+    });
+    const missedC = records.filter(r=>r.status==='Missed').length;
+    const busyC   = records.filter(r=>r.status==='Busy').length;
+    const otherC  = records.filter(r=>!['Answered','Missed','Busy'].includes(r.status)).length;
+    new Chart(document.getElementById('analyticsStatusChart').getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: ['Answered','Missed','Busy','Other'], datasets: [{ data: [answered, missedC, busyC, otherC], backgroundColor: ['#22c55e','#ef4444','#f59e0b','#6c63ff'], borderWidth: 0 }]},
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: tickColor, font:{size:11} } } } }
+    });
+  }, 50);
+}
+
+// =================== REPORTS ===================
+async function runReport() {
+  const clientId = document.getElementById('rpt-client').value;
+  const content  = document.getElementById('reports-table-content');
+  if (!clientId) {
+    content.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div style="font-size:14px;color:var(--text-secondary)">Select a client from the top bar to view reports</div></div>`;
+    return;
+  }
+  const c         = state.clients.find(x=>x.id===clientId);
+  const fromDate  = document.getElementById('rpt-from').value   || '';
+  const toDate    = document.getElementById('rpt-to').value     || '';
+  const status    = document.getElementById('rpt-status').value || '';
+  const sentiment = document.getElementById('rpt-sentiment').value || '';
+  setLoading(true, 'Fetching records…');
+  const rows = await getCallRecords(clientId, { fromDate, toDate, status, sentiment });
+  setLoading(false);
+
+  if (!rows.length) {
+    content.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text-secondary)">No call records found</div>
+      <p>Use the Live Monitor to simulate calls, or <a href="#" onclick="openLogCallModal()" style="color:var(--accent)">log a past call manually</a>.</p>
+    </div>`;
+    return;
+  }
+  content.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:12px;color:var(--text-muted)">Showing <strong style="color:var(--text-primary)">${rows.length}</strong> records for <strong style="color:var(--text-primary)">${c.company}</strong></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Call ID</th><th>Date &amp; Time</th><th>Agent</th><th>Number</th><th>Type</th><th>Duration</th><th>Status</th><th>Sentiment</th><th>Notes</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--accent2)">${r.id}</td>
+        <td style="font-size:12px">${r.date}<br><span style="color:var(--text-muted)">${r.time||''}</span></td>
+        <td>${r.agent}</td>
+        <td style="font-size:12px;font-family:var(--mono)">${r.number||'—'}</td>
+        <td><span class="badge badge-blue">${r.type||'—'}</span></td>
+        <td style="font-family:var(--mono)">${r.duration}</td>
+        <td><span class="badge ${r.status==='Answered'?'badge-green':r.status==='Missed'?'badge-red':'badge-yellow'}">${r.status}</span></td>
+        <td><span class="badge ${r.sentiment==='Positive'?'badge-green':r.sentiment==='Negative'?'badge-red':'badge-yellow'}">${r.sentiment}</span></td>
+        <td style="font-size:12px;color:var(--text-muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes||''}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+function exportReport(fmt) {
+  const clientId = document.getElementById('rpt-client').value;
+  if (!clientId) { toast('Select a client first', 'error'); return; }
+  const records = getCallRecords(clientId);
+  if (!records.length) { toast('No call records to export', 'error'); return; }
+
+  if (fmt === 'CSV') {
+    const headers = ['Call ID','Date','Time','Agent','Number','Type','Duration','Status','Sentiment','Notes'];
+    const rows = records.map(r => [r.id,r.date,r.time||'',r.agent,r.number||'',r.type||'',r.duration,r.status,r.sentiment,r.notes||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=`teledash-report-${clientId}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV exported successfully ✅');
+  } else {
+    toast(`${fmt} export coming soon — use CSV for now`);
+  }
+}
+
+// =================== AI INTELLIGENCE ===================
+function renderAiIntelligence() {
+  const id = document.getElementById('ai-client-select').value;
+  const content = document.getElementById('ai-intel-content');
+  if (!id) {
+    content.innerHTML = `<div class="empty-state card"><div class="empty-icon">🧠</div><div style="font-size:14px;font-weight:600;color:var(--text-secondary)">Select a client to view AI analysis</div></div>`;
+    return;
+  }
+  const c = state.clients.find(x=>x.id===id);
+  const calls = [
+    { id:'CALL-1001', summary:'Customer disputed invoice #1234 for ₹4,750. Agent offered refund.', sentiment:'Negative', score:0.72, topics:['billing','refund','dispute'], intent:'Complaint', duration:'4:23' },
+    { id:'CALL-1002', summary:'New customer inquiry about pricing plans. Interested in Growth tier.', sentiment:'Positive', score:0.91, topics:['pricing','plans','upgrade'], intent:'Sales Inquiry', duration:'6:12' },
+    { id:'CALL-1003', summary:'Technical support request for login issues. Resolved in call.', sentiment:'Neutral', score:0.84, topics:['support','login','technical'], intent:'Support', duration:'3:47' },
+  ];
+  content.innerHTML = `
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">AI Analyzed Calls — ${c.company}</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          ${calls.map(call=>`<div style="background:var(--bg-dark);border:1px solid var(--border);border-radius:10px;padding:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="font-family:var(--mono);font-size:11px;color:var(--accent2)">${call.id}</div>
+              <div style="display:flex;gap:6px">
+                <span class="badge ${call.sentiment==='Positive'?'badge-green':call.sentiment==='Negative'?'badge-red':'badge-yellow'}">${call.sentiment}</span>
+                <span class="badge badge-purple">${call.intent}</span>
+              </div>
+            </div>
+            <div style="font-size:13px;margin-bottom:8px;line-height:1.5">${call.summary}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${call.topics.map(t=>`<span class="badge badge-gray">${t}</span>`).join('')}
+            </div>
+            <div style="margin-top:8px">
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">QA Score: ${(call.score*100).toFixed(0)}%</div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${call.score*100}%"></div></div>
+            </div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">Insights Summary</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="background:var(--bg-dark);padding:12px;border-radius:8px;border:1px solid var(--border)">
+            <div style="font-size:11px;color:var(--text-muted)">TOP INTENT</div>
+            <div style="font-size:15px;font-weight:700;margin-top:4px">Support Requests</div>
+          </div>
+          <div style="background:var(--bg-dark);padding:12px;border-radius:8px;border:1px solid var(--border)">
+            <div style="font-size:11px;color:var(--text-muted)">AVG QA SCORE</div>
+            <div style="font-size:15px;font-weight:700;color:var(--accent-green);margin-top:4px">82%</div>
+          </div>
+          <div style="background:var(--bg-dark);padding:12px;border-radius:8px;border:1px solid var(--border)">
+            <div style="font-size:11px;color:var(--text-muted)">DOMINANT SENTIMENT</div>
+            <div style="font-size:15px;font-weight:700;color:var(--accent-yellow);margin-top:4px">Neutral</div>
+          </div>
+          <div class="card" style="background:var(--bg-dark)">
+            <div style="font-size:12px;font-weight:600;margin-bottom:8px">Top Keywords</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px">
+              ${['billing','support','refund','pricing','login','escalation'].map(k=>`<span class="badge badge-blue">${k}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// =================== AI CHAT ===================
+function initChat() {
+  const id = document.getElementById('chat-client-select').value;
+  const content = document.getElementById('chat-content');
+  if (!id) {
+    content.innerHTML = `<div class="empty-state card"><div class="empty-icon">💬</div><div style="font-size:14px;color:var(--text-secondary)">Select a client to start chatting</div></div>`;
+    return;
+  }
+  const c = state.clients.find(x=>x.id===id);
+  state.chatHistory = [];
+  content.innerHTML = `
+    <div class="card" style="display:flex;flex-direction:column;height:500px">
+      <div style="font-size:13px;color:var(--text-muted);padding:10px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
+        Chatting about <strong style="color:var(--text-primary)">${c.company}</strong> — Ask anything about their call data
+      </div>
+      <div id="chat-box" style="flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:10px">
+        <div class="chat-msg ai"><div class="chat-bubble">Hi! I'm your AI assistant for <strong>${c.company}</strong>'s call data. Ask me about call volumes, sentiments, agent performance, or anything else! 💡</div></div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;gap:8px">
+        <input type="text" id="chat-input" placeholder="Ask about calls, agents, sentiment…" onkeydown="if(event.key==='Enter')sendChatMsg()">
+        <button class="btn btn-primary" onclick="sendChatMsg()" style="white-space:nowrap">Send ↑</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+        ${['How many calls today?','Top performing agent?','Sentiment summary?','Missed call rate?'].map(q=>`<button class="btn btn-secondary btn-sm" onclick="document.getElementById('chat-input').value='${q}';sendChatMsg()">${q}</button>`).join('')}
+      </div>
+    </div>`;
+}
+function sendChatMsg() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const box = document.getElementById('chat-box');
+  const id = document.getElementById('chat-client-select').value;
+  const c = state.clients.find(x=>x.id===id);
+
+  box.innerHTML += `<div class="chat-msg user"><div class="chat-bubble">${msg}</div><div class="chat-meta">${new Date().toLocaleTimeString()}</div></div>`;
+  input.value = '';
+  box.scrollTop = 999999;
+
+  const typing = document.createElement('div');
+  typing.className = 'chat-msg ai';
+  typing.innerHTML = '<div class="chat-bubble" style="color:var(--text-muted)">Analyzing data…</div>';
+  box.appendChild(typing);
+  box.scrollTop = 999999;
+
+  // Generate AI response based on query
+  setTimeout(() => {
+    typing.remove();
+    const lower = msg.toLowerCase();
+    let reply = '';
+    if (lower.includes('today') || lower.includes('call')) {
+      reply = `Based on ${c.company}'s data, there are ${c.callsToday||0} calls recorded today — ${c.answered||0} answered and ${c.missed||0} missed. Call volume appears consistent with typical weekday patterns.`;
+    } else if (lower.includes('sentiment')) {
+      reply = `Sentiment analysis for ${c.company}: 35% positive, 45% neutral, 20% negative. The neutral-dominant trend suggests standard transactional interactions. I'd recommend reviewing the 20% negative calls for quality improvement opportunities.`;
+    } else if (lower.includes('agent') || lower.includes('perform')) {
+      reply = `Top performing agent for ${c.company} this week is Priya S. with a 94% answer rate and 89% positive sentiment score. Rahul K. is close behind at 91% answer rate.`;
+    } else if (lower.includes('missed') || lower.includes('rate')) {
+      reply = `${c.company}'s missed call rate is ${c.callsToday ? Math.round((c.missed/c.callsToday)*100) : 0}%. Industry benchmark is typically 15-20%. I recommend setting up voicemail automation for after-hours missed calls.`;
+    } else {
+      reply = `I've analyzed ${c.company}'s call data. Total calls: ${c.callsToday||0} | Answered: ${c.answered||0} | Missed: ${c.missed||0} | Plan: ${c.plan}. What specific metric would you like to explore further?`;
+    }
+    box.innerHTML += `<div class="chat-msg ai"><div class="chat-bubble">${reply}</div><div class="chat-meta">AI Assistant · ${new Date().toLocaleTimeString()}</div></div>`;
+    box.scrollTop = 999999;
+  }, 800);
+}
+
+// =================== TOKEN USAGE ===================
+let tokenCharts = {};
+function renderTokenUsage() {
+  const totalTokens = state.clients.length * Math.floor(Math.random()*50000+10000);
+  document.getElementById('tu-tokens').textContent = totalTokens.toLocaleString();
+  document.getElementById('tu-cost').textContent = '$' + (totalTokens * 0.000003).toFixed(4);
+  document.getElementById('tu-records').textContent = state.clients.length * 47;
+
+  const days = Array.from({length:14},(_,i)=>{const d=new Date();d.setDate(d.getDate()-13+i);return d.toLocaleDateString('en',{month:'short',day:'numeric'});});
+  const costs = days.map(()=>state.clients.length ? +(Math.random()*0.5+0.1).toFixed(3) : 0);
+
+  ['tokenDailyChart','tokenModelChart'].forEach(id=>{if(tokenCharts[id])tokenCharts[id].destroy();});
+
+  tokenCharts.tokenDailyChart = new Chart(document.getElementById('tokenDailyChart').getContext('2d'), {
+    type: 'line',
+    data: { labels: days, datasets: [{ label: 'Cost ($)', data: costs, borderColor: '#a855f7', backgroundColor: 'rgba(168,85,247,.1)', fill: true, tension: .4 }]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { grid: { color: '#252836' }, ticks: { color: '#8b8fa8', maxTicksLimit: 7 } }, y: { grid: { color: '#252836' }, ticks: { color: '#8b8fa8' } } }
+    }
+  });
+  tokenCharts.tokenModelChart = new Chart(document.getElementById('tokenModelChart').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: ['Claude Sonnet','Claude Haiku','Claude Opus'], datasets: [{ data: [60,30,10], backgroundColor: ['#6c63ff','#4f9dff','#a855f7'], borderWidth: 0 }]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#8b8fa8', font: { size: 11 } } } } }
+  });
+}
+
+// =================== LIVE MONITOR ===================
+function simulateLiveCall() {
+  if (!state.clients.length) { toast('Add a client first', 'error'); return; }
+  const c = state.clients[Math.floor(Math.random()*state.clients.length)];
+  const agents = state.agents.filter(a=>a.clientId===c.id).map(a=>a.name);
+  if (!agents.length) agents.push('Priya S.','Rahul K.','Anika R.','Dev M.');
+  const statuses   = ['Answered','Answered','Answered','Missed','Busy'];
+  const sentiments = ['Positive','Positive','Neutral','Neutral','Negative'];
+  const callTypes  = ['Inbound','Outbound'];
+  const callId = 'CALL-' + Date.now();
+  const call = {
+    id:      callId,
+    clientId: c.id,
+    client:  c.company,
+    agent:   agents[Math.floor(Math.random()*agents.length)],
+    number:  '+91 98' + Math.floor(Math.random()*9000000+1000000),
+    type:    callTypes[Math.floor(Math.random()*2)],
+    started: new Date().toISOString(),
+    duration: 0,
+  };
+  state.liveCalls.push(call);
+  renderLiveCalls();
+  const interval = setInterval(() => {
+    call.duration++;
+    const el = document.getElementById('live-dur-'+call.id);
+    if (el) el.textContent = formatDuration(call.duration);
+  }, 1000);
+  setTimeout(async () => {
+    clearInterval(interval);
+    state.liveCalls = state.liveCalls.filter(x=>x.id!==call.id);
+    renderLiveCalls();
+    const status    = statuses[Math.floor(Math.random()*statuses.length)];
+    const sentiment = sentiments[Math.floor(Math.random()*sentiments.length)];
+    const completedRecord = {
+      id: call.id, clientId: c.id, client: c.company,
+      agent: call.agent, number: call.number, type: call.type,
+      status, sentiment,
+      duration: formatDuration(call.duration), durationSec: call.duration,
+      date: new Date().toISOString().slice(0,10),
+      time: new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+      notes: '', source: 'live',
+    };
+    await recordCall(c.id, completedRecord);
+    await dbIncrementClientCalls(c.id, status);
+    toast(`Call ended: ${call.client} — ${formatDuration(call.duration)}`);
+  }, Math.floor(Math.random()*20+5)*1000);
+}
+function formatDuration(s) { return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
+function renderLiveCalls() {
+  document.getElementById('live-active').textContent = state.liveCalls.length;
+  document.getElementById('live-badge-count').textContent = state.liveCalls.length;
+  const el = document.getElementById('live-calls-table');
+  if (!state.liveCalls.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📡</div><div style="font-size:14px;color:var(--text-secondary)">No active calls at the moment</div><p>Click "Simulate Call" to test the live monitor</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Call ID</th><th>Client</th><th>Agent</th><th>Number</th><th>Type</th><th>Duration</th><th>Status</th></tr></thead>
+    <tbody>${state.liveCalls.map(c=>`<tr>
+      <td style="font-family:var(--mono);font-size:12px">${c.id}</td>
+      <td><strong>${c.client}</strong></td><td>${c.agent}</td><td>${c.number}</td>
+      <td><span class="badge badge-blue">${c.type}</span></td>
+      <td id="live-dur-${c.id}" style="font-family:var(--mono)">${formatDuration(c.duration)}</td>
+      <td><span class="badge badge-green"><span class="dot dot-green" style="margin-right:4px"></span>Live</span></td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
+// =================== AGENTS ===================
+function renderAgentsPage() {
+  const el = document.getElementById('agents-content');
+  if (!state.agents.length) {
+    el.innerHTML = `<div class="empty-state card"><div class="empty-icon">👥</div><div style="font-size:14px;font-weight:600;color:var(--text-secondary)">No agents yet</div><p>Add agents to track their performance.</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px">
+    ${state.agents.map(a=>{
+      const c = state.clients.find(x=>x.id===a.clientId);
+      return `<div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="avatar">${a.name[0]}</div>
+          <div><div style="font-weight:600;font-size:14px">${a.name}</div><div style="font-size:11px;color:var(--text-muted)">${c?.company||'—'}</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center">
+          <div style="background:var(--bg-dark);padding:8px;border-radius:7px;border:1px solid var(--border)">
+            <div style="font-size:16px;font-weight:700">${Math.floor(Math.random()*100+50)}</div>
+            <div style="font-size:10px;color:var(--text-muted)">Calls</div>
+          </div>
+          <div style="background:var(--bg-dark);padding:8px;border-radius:7px;border:1px solid var(--border)">
+            <div style="font-size:16px;font-weight:700;color:var(--accent-green)">${Math.floor(Math.random()*15+80)}%</div>
+            <div style="font-size:10px;color:var(--text-muted)">Ans. Rate</div>
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">QA Score</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${Math.floor(Math.random()*30+65)}%"></div></div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function openAddAgentModal() {
+  populateClientSelect('agent-client');
+  openModal('modal-agent');
+}
+async function addAgent() {
+  const name     = document.getElementById('agent-name').value.trim();
+  const email    = document.getElementById('agent-email').value.trim();
+  const clientId = document.getElementById('agent-client').value;
+  if (!name || !clientId) { toast('Name and client are required', 'error'); return; }
+  try {
+    setLoading(true,'Saving agent…');
+    await dbInsertAgent({ name, email, clientId });
+    setLoading(false);
+    closeModal('modal-agent');
+    renderAgentsPage();
+    toast(`Agent ${name} added`);
+  } catch(e) { setLoading(false); toast('Failed: '+e.message,'error'); }
+}
+
+// =================== TRANSCRIPTOR ===================
+function switchTranscriptTab(tab, el) {
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('transcript-mic-panel').style.display = tab==='mic'?'block':'none';
+  document.getElementById('transcript-upload-panel').style.display = tab==='upload'?'block':'none';
+  document.getElementById('transcript-paste-panel').style.display = tab==='paste'?'block':'none';
+}
+function toggleMic() {
+  if (!state.micActive) {
+    state.micActive = true;
+    state.micTime = 0;
+    document.getElementById('mic-btn').textContent = '⏹ Stop Recording';
+    document.getElementById('mic-btn').style.background = 'var(--accent-red)';
+    document.getElementById('mic-status').textContent = 'Recording in progress…';
+    document.getElementById('transcript-output').style.display = 'block';
+    document.getElementById('transcript-output').textContent = '';
+    buildWaveform();
+    state.micInterval = setInterval(() => {
+      state.micTime++;
+      const m = String(Math.floor(state.micTime/60)).padStart(2,'0');
+      const s = String(state.micTime%60).padStart(2,'0');
+      document.getElementById('mic-timer').textContent = m+':'+s;
+      // Simulate live transcript
+      const words = ['Hello','yes','the invoice','I understand','let me check','one moment','absolutely','I can help','your account','refund request'];
+      const out = document.getElementById('transcript-output');
+      if (state.micTime % 2 === 0) out.textContent += ' ' + words[Math.floor(Math.random()*words.length)];
+    }, 1000);
+  } else {
+    stopMic();
+  }
+}
+function stopMic() {
+  state.micActive = false;
+  clearInterval(state.micInterval);
+  document.getElementById('mic-btn').textContent = '▶ Start Recording';
+  document.getElementById('mic-btn').style.background = '';
+  document.getElementById('mic-status').textContent = 'Recording stopped. Analyzing…';
+  document.getElementById('waveform').innerHTML = '';
+  setTimeout(() => showAiOutput(), 1000);
+}
+function buildWaveform() {
+  const wf = document.getElementById('waveform');
+  wf.innerHTML = '';
+  for (let i=0;i<20;i++) {
+    const b = document.createElement('div');
+    b.style.cssText = `width:4px;background:var(--accent);border-radius:2px;animation:wave ${(Math.random()*0.5+0.3).toFixed(2)}s ease-in-out infinite alternate;height:${Math.floor(Math.random()*20+5)}px`;
+    wf.appendChild(b);
+  }
+}
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const result = document.getElementById('upload-result');
+  result.style.display = 'block';
+  result.innerHTML = `<div style="background:var(--bg-dark);border:1px solid var(--border);border-radius:8px;padding:14px">
+    <div style="font-size:13px;margin-bottom:8px">📁 ${file.name} (${(file.size/1024).toFixed(0)} KB)</div>
+    <div class="progress-bar" id="upload-progress"><div class="progress-fill" style="width:0%;transition:width .3s"></div></div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:6px" id="upload-status">Uploading…</div>
+  </div>`;
+  let p = 0;
+  const iv = setInterval(() => {
+    p += Math.floor(Math.random()*15+5);
+    if (p >= 100) { p = 100; clearInterval(iv); document.getElementById('upload-status').textContent = 'Transcribing with AI…'; setTimeout(showAiOutput, 1200); }
+    document.querySelector('#upload-progress .progress-fill').style.width = p+'%';
+  }, 200);
+}
+function analyzeText() {
+  const text = document.getElementById('paste-text').value.trim();
+  if (!text) { toast('Please paste some text first', 'error'); return; }
+  const result = document.getElementById('paste-result');
+  result.innerHTML = `<div style="font-size:12px;color:var(--text-muted)">Analyzing…</div>`;
+  setTimeout(() => { showAiOutput(); result.innerHTML = ''; }, 800);
+}
+function showAiOutput() {
+  document.getElementById('mic-status').textContent = 'Analysis complete';
+  document.getElementById('ai-output-panel').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="background:var(--bg-dark);padding:10px 12px;border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Purpose</div>
+        <div style="font-size:13px;margin-top:4px">Customer called regarding invoice dispute and refund request</div>
+      </div>
+      <div style="background:var(--bg-dark);padding:10px 12px;border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Summary</div>
+        <div style="font-size:13px;margin-top:4px;line-height:1.6">The customer contacted billing about an incorrect charge on Invoice #1234. The agent verified the error and initiated a refund of ₹4,750.</div>
+      </div>
+      <div style="background:var(--bg-dark);padding:10px 12px;border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Sentiment</div>
+        <span class="badge badge-yellow" style="margin-top:4px">Negative → Neutral</span>
+        <div style="margin-top:6px"><div class="progress-bar"><div class="progress-fill" style="width:65%;background:var(--accent-yellow)"></div></div></div>
+      </div>
+      <div style="background:var(--bg-dark);padding:10px 12px;border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Action Items</div>
+        <div style="font-size:12px;margin-top:4px;display:flex;flex-direction:column;gap:3px">
+          <div>• Process refund of ₹4,750</div><div>• Send confirmation email</div><div>• Flag invoice template for fix</div>
+        </div>
+      </div>
+      <div style="background:var(--bg-dark);padding:10px 12px;border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Topics</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">
+          ${['billing','refund','invoice','dispute','escalation'].map(t=>`<span class="badge badge-blue">${t}</span>`).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+// =================== LOG CALL MODAL ===================
+function openLogCallModal() {
+  // Populate client dropdown
+  const sel = document.getElementById('log-client');
+  sel.innerHTML = '<option value="">Select client</option>' +
+    state.clients.map(c=>`<option value="${c.id}" ${c.id===state.activeClientId?'selected':''}>${c.company}</option>`).join('');
+
+  // Prefill today's date and current time
+  const now = new Date();
+  document.getElementById('log-date').value = now.toISOString().slice(0,10);
+  document.getElementById('log-time').value = now.toTimeString().slice(0,5);
+  document.getElementById('log-duration').value = '';
+  document.getElementById('log-agent').value = '';
+  document.getElementById('log-number').value = '';
+  document.getElementById('log-notes').value = '';
+  document.getElementById('log-call-error').style.display = 'none';
+
+  // Prefill agent if the active client has agents
+  if (state.activeClientId) {
+    const agentList = state.agents.filter(a=>a.clientId===state.activeClientId);
+    if (agentList.length) document.getElementById('log-agent').value = agentList[0].name;
+  }
+  openModal('modal-log-call');
+}
+
+async function saveLoggedCall() {
+  const clientId  = document.getElementById('log-client').value;
+  const agent     = document.getElementById('log-agent').value.trim();
+  const date      = document.getElementById('log-date').value;
+  const durStr    = document.getElementById('log-duration').value.trim();
+  const errEl     = document.getElementById('log-call-error');
+  const showErr = msg => { errEl.textContent=msg; errEl.style.display='block'; };
+  errEl.style.display='none';
+  if (!clientId) { showErr('Please select a client.'); return; }
+  if (!agent)    { showErr('Agent name is required.'); return; }
+  if (!date)     { showErr('Date is required.'); return; }
+  if (!durStr||!/^\d{1,2}:\d{2}$/.test(durStr)) { showErr('Enter duration as mm:ss (e.g. 04:30).'); return; }
+  const [mm,ss]  = durStr.split(':').map(Number);
+  const durationSec = mm*60+ss;
+  const status    = document.getElementById('log-status').value;
+  const sentiment = document.getElementById('log-sentiment').value;
+  const time      = document.getElementById('log-time').value;
+  const number    = document.getElementById('log-number').value.trim();
+  const type      = document.getElementById('log-type').value;
+  const notes     = document.getElementById('log-notes').value.trim();
+  const callRecord = {
+    id: 'LOG-'+Date.now(), clientId,
+    client: state.clients.find(c=>c.id===clientId)?.company||'',
+    agent, number, type, status, sentiment,
+    duration: durStr, durationSec, date, time, notes, source:'manual',
+  };
+  try {
+    setLoading(true,'Saving call…');
+    await recordCall(clientId, callRecord);
+    await dbIncrementClientCalls(clientId, status);
+    setLoading(false);
+    closeModal('modal-log-call');
+    toast(`✅ Call logged for ${callRecord.client}`);
+    if (state.activeClientId===clientId) { await runReport(); refreshDashboard(); }
+  } catch(e) { setLoading(false); showErr('Failed to save: '+e.message); }
+}
+function toggleTheme(isLight) {
+  if (isLight) {
+    document.documentElement.classList.add('light');
+    document.getElementById('theme-label').textContent = '☀️ Light';
+    document.getElementById('toggle-thumb').textContent = '☀️';
+    localStorage.setItem('teledash-theme','light');
+  } else {
+    document.documentElement.classList.remove('light');
+    document.getElementById('theme-label').textContent = '🌙 Dark';
+    document.getElementById('toggle-thumb').textContent = '🌙';
+    localStorage.setItem('teledash-theme','dark');
+  }
+}
+
+// =================== TOPBAR PAGE TITLE ===================
+const PAGE_TITLES = {
+  dashboard: 'Master Dashboard', analytics: 'Client Analytics', reports: 'Reports',
+  clients: 'Clients', onboarding: 'Client Onboarding', 'ai-intelligence': 'AI Intelligence',
+  'ai-chat': 'AI Chat Assistant', 'token-usage': 'Token Usage', 'live-monitor': 'Live Monitor',
+  agents: 'Agent Dashboard', transcriptor: 'Call Transcriptor',
+};
+
+// =================== CLOCK ===================
+function updateClock() {
+  const now = new Date();
+  document.getElementById('topbar-clock').textContent = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+
+// =================== AUTH (Hybrid: Supabase + Local fallback) ===================
+let selectedRole = 'admin';
+function selectRole(role) {
+  selectedRole = role;
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('role-' + role)?.classList.add('selected');
+}
+function showView(id) {
+  document.querySelectorAll('.auth-view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.auth-error, .auth-success').forEach(e => {
+    e.classList.remove('show'); e.textContent = '';
+    e.style.background = ''; e.style.borderColor = ''; e.style.color = '';
+  });
+}
+function showAuthError(id, msg) { const el=document.getElementById(id); el.textContent=msg; el.classList.add('show'); }
+function showAuthSuccess(id, msg) { const el=document.getElementById(id); el.textContent=msg; el.classList.add('show'); }
+function togglePw(inputId, btn) {
+  const input=document.getElementById(inputId);
+  if(input.type==='password'){input.type='text';btn.textContent='🙈';}
+  else{input.type='password';btn.textContent='👁️';}
+}
+function fillDemo(email, pass) {
+  document.getElementById('signin-email').value=email;
+  document.getElementById('signin-password').value=pass;
+}
+function checkPwStrength(pw) {
+  let score=0;
+  if(pw.length>=8)score++;if(/[A-Z]/.test(pw))score++;if(/[0-9]/.test(pw))score++;if(/[^A-Za-z0-9]/.test(pw))score++;
+  const fill=document.getElementById('pw-fill'),label=document.getElementById('pw-label');
+  const colors=['#ef4444','#f59e0b','#4f9dff','#22c55e'],labels=['Weak','Fair','Good','Strong'],widths=['25%','50%','75%','100%'];
+  if(!pw){fill.style.width='0%';label.textContent='Enter a password';return;}
+  fill.style.width=widths[score-1]||'25%';fill.style.background=colors[score-1]||'#ef4444';
+  label.textContent=`Strength: ${labels[score-1]||'Weak'}`;
+}
+
+async function doSignIn() {
+  const email    = document.getElementById('signin-email').value.trim().toLowerCase();
+  const password = document.getElementById('signin-password').value;
+  const btn      = document.getElementById('signin-btn');
+  const errEl    = document.getElementById('signin-error');
+  errEl.classList.remove('show'); errEl.style.cssText='';
+  if (!email||!password) { showAuthError('signin-error','Please enter your email and password.'); return; }
+  btn.disabled=true; btn.textContent='Signing in…';
+
+  // 1️⃣ Try Supabase first (if configured)
+  if (SUPABASE_READY) {
+    try {
+      const res = await sb.auth.signIn({ email, password });
+      if (res.access_token) {
+        saveLocalSession(res);
+        const profile = await fetchProfile(res.access_token, res.user?.id);
+        await enterApp({ ...res.user, ...profile, access_token: res.access_token });
+        return;
+      }
+      // Supabase auth failed — fall through to local
+    } catch(e) { /* network error — fall through to local */ }
+  }
+
+  // 2️⃣ Fallback: local user store (demo accounts + locally registered users)
+  await new Promise(r => setTimeout(r, 500)); // small delay feels natural
+  const users = getLocalUsers();
+  const user  = users.find(u => u.email.toLowerCase()===email && u.password===password);
+  if (user) {
+    saveLocalUserSession(user);
+    await enterApp(user);
+  } else {
+    showAuthError('signin-error', SUPABASE_READY
+      ? '❌ Invalid email or password.'
+      : '❌ Invalid email or password. Use a demo account above, or sign up.');
+    btn.disabled=false; btn.textContent='Sign In to TeleDash';
+  }
+}
+
+async function doSignUp() {
+  const fname   = document.getElementById('signup-fname').value.trim();
+  const lname   = document.getElementById('signup-lname').value.trim();
+  const email   = document.getElementById('signup-email').value.trim().toLowerCase();
+  const company = document.getElementById('signup-company').value.trim();
+  const pw      = document.getElementById('signup-password').value;
+  const confirm = document.getElementById('signup-confirm').value;
+  document.getElementById('signup-error').classList.remove('show');
+  document.getElementById('signup-success').classList.remove('show');
+  if(!fname||!lname){showAuthError('signup-error','Please enter your full name.');return;}
+  if(!email||!/\S+@\S+\.\S+/.test(email)){showAuthError('signup-error','Please enter a valid email.');return;}
+  if(!company){showAuthError('signup-error','Please enter your company name.');return;}
+  if(pw.length<8){showAuthError('signup-error','Password must be at least 8 characters.');return;}
+  if(pw!==confirm){showAuthError('signup-error','Passwords do not match.');return;}
+  const initials=(fname[0]+lname[0]).toUpperCase();
+  const role=selectedRole.charAt(0).toUpperCase()+selectedRole.slice(1);
+
+  // 1️⃣ Try Supabase signup (if configured)
+  if (SUPABASE_READY) {
+    try {
+      const res = await sb.auth.signUp({ email, password: pw, options: {
+        data: { full_name:`${fname} ${lname}`, role, company, initials }
+      }});
+      if (res.error) { showAuthError('signup-error','❌ '+(res.error.message||'Sign up failed.')); return; }
+      showAuthSuccess('signup-success',`✅ Account created for ${email}! Please sign in.`);
+      setTimeout(()=>{ showView('view-signin'); document.getElementById('signin-email').value=email; document.getElementById('signin-password').focus(); },1400);
+      return;
+    } catch(e) { /* fall through to local */ }
+  }
+
+  // 2️⃣ Fallback: save to local store
+  const users = getLocalUsers();
+  if (users.find(u=>u.email===email)) { showAuthError('signup-error','An account with this email already exists.'); return; }
+  users.push({ email, password:pw, name:`${fname} ${lname}`, role, company, initials });
+  saveLocalUsers(users);
+  showAuthSuccess('signup-success',`✅ Account created for ${email}! Please sign in.`);
+  setTimeout(()=>{
+    showView('view-signin');
+    document.getElementById('signin-email').value=email;
+    document.getElementById('signin-password').focus();
+    const infoEl=document.getElementById('signin-error');
+    infoEl.style.cssText='background:rgba(108,99,255,.1);border-color:rgba(108,99,255,.3);color:#a89dff;';
+    infoEl.textContent='✅ Account created! Enter your password to sign in.';
+    infoEl.classList.add('show');
+  },1400);
+}
+
+async function doForgot() {
+  const email=document.getElementById('forgot-email').value.trim().toLowerCase();
+  document.getElementById('forgot-error').classList.remove('show');
+  document.getElementById('forgot-success').classList.remove('show');
+  if(!email||!/\S+@\S+\.\S+/.test(email)){showAuthError('forgot-error','Please enter a valid email address.');return;}
+  if(SUPABASE_READY){
+    try{ await fetch(`${SUPABASE_URL}/auth/v1/recover`,{method:'POST',headers:sbHeaders(),body:JSON.stringify({email})}); }catch(e){}
+  }
+  showAuthSuccess('forgot-success',`📧 If ${email} is registered, a reset link has been sent to your inbox.`);
+}
+
+async function fetchProfile(token, userId) {
+  if(!userId) return {};
+  try {
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=*`,{headers:sbHeaders(token)});
+    const data=await res.json();
+    const p=Array.isArray(data)?data[0]:data;
+    return { name:p?.full_name||'', role:p?.role||'Admin', company:p?.company||'', initials:p?.initials||'', email:p?.email||'' };
+  } catch { return {}; }
+}
+
+async function enterApp(user) {
+  state.currentUser = user;
+  const initials = user.initials||(user.email||'').slice(0,2).toUpperCase();
+  const name     = user.name||user.email||'User';
+  const initEl   = document.querySelector('.user-avatar');
+  const emailEl  = document.querySelector('.user-email');
+  const topAvatar= document.querySelector('.topbar-avatar');
+  if(initEl)    initEl.textContent=initials;
+  if(emailEl)   emailEl.textContent=user.email||'';
+  if(topAvatar){topAvatar.textContent=initials; topAvatar.title=`${name} · ${user.role||'Admin'}`;}
+
+  const auth=document.getElementById('auth-screen');
+  auth.style.transition='opacity .4s ease'; auth.style.opacity='0';
+  setTimeout(()=>{ auth.classList.add('hidden'); },400);
+  document.getElementById('app').style.display='flex';
+
+  // Load data — Supabase if ready, localStorage otherwise
+  setLoading(true,'Loading data…');
+  try {
+    if(SUPABASE_READY && user.access_token) {
+      await dbLoadClients();
+      await dbLoadAgents();
+    } else {
+      loadSharedData(); // localStorage fallback
+    }
+  } catch(e) { loadSharedData(); }
+  setLoading(false);
+
+  updateAllClientSelects();
+  populateGlobalClientSelect();
+  updateBadges();
+  refreshDashboard();
+  const dot=document.getElementById('global-client-dot');
+  if(dot) dot.classList.toggle('visible',!!state.activeClientId);
+  toast(`Welcome back, ${name.split(' ')[0]}! 👋`);
+}
+
+async function signOut() {
+  if(SUPABASE_READY){ try{ await sb.auth.signOut(); }catch(e){} clearLocalSession(); }
+  clearLocalUserSession();
+  state.clients=[];state.agents=[];state.callRecords={};state.currentUser=null;
+  document.getElementById('signin-email').value='';
+  document.getElementById('signin-password').value='';
+  showView('view-signin');
+  const auth=document.getElementById('auth-screen');
+  auth.classList.remove('hidden'); auth.style.opacity='0';
+  setTimeout(()=>{ auth.style.opacity='1'; },10);
+  document.getElementById('app').style.display='none';
+  toast('Signed out successfully');
+}
+
+function authToggleTheme() {
+  const isLight=!document.documentElement.classList.contains('light');
+  const cb=document.getElementById('theme-checkbox');
+  if(cb) cb.checked=isLight;
+  toggleTheme(isLight);
+  document.getElementById('auth-theme-btn').textContent=isLight?'🌙 Dark Mode':'☀️ Light Mode';
+}
+
+// =================== INIT ===================
+document.addEventListener('DOMContentLoaded', async () => {
+  // Restore theme
+  if(localStorage.getItem('teledash-theme')==='light'){
+    const cb=document.getElementById('theme-checkbox');
+    if(cb) cb.checked=true;
+    toggleTheme(true);
+    document.getElementById('auth-theme-btn').textContent='🌙 Dark Mode';
+  }
+
+  // Seed local demo users
+  getLocalUsers(); // this seeds defaults into localStorage on first run
+
+  // Check for existing session
+  let restored = false;
+
+  // Try Supabase session first
+  if(SUPABASE_READY){
+    const sbSession=getLocalSession();
+    if(sbSession?.access_token){
+      setLoading(true,'Restoring session…');
+      try{
+        const userData=await sb.auth.getUser();
+        if(userData&&userData.id){
+          const profile=await fetchProfile(sbSession.access_token,userData.id);
+          document.getElementById('app').style.display='flex';
+          document.getElementById('auth-screen').classList.add('hidden');
+          await enterApp({...userData,...profile,access_token:sbSession.access_token});
+          restored=true;
+        } else { clearLocalSession(); }
+      } catch(e){ clearLocalSession(); }
+      setLoading(false);
+    }
+  }
+
+  // Try local session fallback
+  if(!restored){
+    const localSession=getLocalUserSession();
+    if(localSession){
+      document.getElementById('app').style.display='flex';
+      document.getElementById('auth-screen').classList.add('hidden');
+      await enterApp(localSession);
+      restored=true;
+    }
+  }
+
+  if(!restored) document.getElementById('app').style.display='none';
+
+  initDashCharts();
+  renderTokenUsage();
+  updateClock();
+  setInterval(updateClock,1000);
+
+  const style=document.createElement('style');
+  style.textContent=`@keyframes wave{from{transform:scaleY(.5)}to{transform:scaleY(1)}} @keyframes spin{to{transform:rotate(360deg)}}`;
+  document.head.appendChild(style);
+});
+
+// =================== NAVIGATION ===================
+function showPage(page) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  const pageEl = document.getElementById("page-" + page);
+  if (pageEl) pageEl.classList.add("active");
+  const navEl = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (navEl) navEl.classList.add("active");
+  const titleEl = document.getElementById("topbar-page-title");
+  if (titleEl) titleEl.textContent = PAGE_TITLES[page] || page;
+  onPageEnter(page);
+}
+</script>
+</body>
+</html>
