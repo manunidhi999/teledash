@@ -3104,8 +3104,8 @@ function updateClock() {
 function openSupabaseSettings() {
   // Pre-fill with current values if set
   const stored = (() => { try { return JSON.parse(localStorage.getItem('teledash-sb-config')||'{}'); } catch { return {}; } })();
-  document.getElementById('sb-url-input').value  = stored.url  || (HARDCODED_URL  !== 'YOUR_SUPABASE_URL'  ? HARDCODED_URL  : '');
-  document.getElementById('sb-key-input').value  = stored.anon || (HARDCODED_ANON !== 'YOUR_SUPABASE_ANON_KEY' ? HARDCODED_ANON : '');
+  document.getElementById('sb-url-input').value  = stored.url  || (HARDCODED_URL  !== 'https://obeptekqxdhwjfjrlhfr.supabase.co'  ? HARDCODED_URL  : '');
+  document.getElementById('sb-key-input').value  = stored.anon || (HARDCODED_ANON !== 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9iZXB0ZWtxeGRod2pmanJsaGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjIxODgsImV4cCI6MjA5MTI5ODE4OH0.zxFycjtlrP1zJrxsAHdD1rbQdKivygbT-5p7_Y7WoUk' ? HARDCODED_ANON : '');
   document.getElementById('sb-modal-error').style.display   = 'none';
   document.getElementById('sb-modal-success').style.display = 'none';
   openModal('modal-supabase');
